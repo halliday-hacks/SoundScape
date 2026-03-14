@@ -1833,7 +1833,14 @@ export default function SoundMapInner() {
     west: number;
   } | null>(null);
 
-  const mapRef = useRef<MapRef>(null);
+  const mapRef = useRef<MapRef | null>(null);
+  const [isMapReady, setIsMapReady] = useState(false);
+
+  const setMapRef = useCallback((node: MapRef | null) => {
+    mapRef.current = node;
+    setIsMapReady(!!node);
+  }, []);
+
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -1903,7 +1910,7 @@ export default function SoundMapInner() {
         mapRef.current.off("zoomend", updateBounds);
       }
     };
-  }, []);
+  }, [isMapReady]);
 
   // Merge: static world PINS + real uploads from DB + Elastic results (skip those without coords)
   const allPins = useMemo<Pin[]>(() => {
@@ -2040,7 +2047,7 @@ export default function SoundMapInner() {
     >
       {/* MAP */}
       <MapLibre
-        ref={mapRef}
+        ref={setMapRef}
         center={[144.9631, -37.8136]}
         zoom={10}
         minZoom={2}
@@ -2407,42 +2414,6 @@ export default function SoundMapInner() {
         >
           🎙
         </button>
-      </div>
-
-      {/* ── ZOOM BUTTONS ── */}
-      <div
-        style={{
-          position: "absolute",
-          right: panelOpen ? 380 : 20,
-          bottom: 24,
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          transition: "right .35s cubic-bezier(.4,0,.2,1)",
-        }}
-      >
-        {["+", "−"].map((b) => (
-          <div
-            key={b}
-            style={{
-              width: 36,
-              height: 36,
-              background: "rgba(12,12,12,.9)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,.1)",
-              borderRadius: 9,
-              color: "rgba(255,255,255,.55)",
-              fontSize: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-          >
-            {b}
-          </div>
-        ))}
       </div>
 
       {/* ── REFRESH INDICATOR ── */}
