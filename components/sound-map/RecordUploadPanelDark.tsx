@@ -681,7 +681,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                     {m === "record" ? "●" : "◧"}
                   </span>
                   <span>
-                    {m === "record" ? "Record" : "Upload"}
+                    {m === "record" ? "Live Record" : "Upload"}
                   </span>
                 </button>
               ))}

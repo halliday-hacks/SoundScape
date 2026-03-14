@@ -1917,10 +1917,39 @@ export default function SoundMapInner() {
   const selectCluster = useCallback((cluster: Cluster) => {
     setSelectedCluster(cluster);
     setSelected(null);
-    mapRef.current?.flyTo({
-      center: [cluster.lng, cluster.lat],
-      zoom: Math.min(mapRef.current.getZoom() + 2, 18),
-      duration: 1000,
+    const map = mapRef.current;
+    if (!map) return;
+
+    const lngs = cluster.pins.map((p) => p.lng);
+    const lats = cluster.pins.map((p) => p.lat);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+
+    // All pins at essentially the same spot — just fly there
+    if (maxLng - minLng < 1e-5 && maxLat - minLat < 1e-5) {
+      map.flyTo({
+        center: [cluster.lng, cluster.lat],
+        zoom: 16,
+        duration: 900,
+        essential: true,
+      });
+      return;
+    }
+
+    // Fit the viewport to the bounding box of all cluster pins.
+    // Large geographic clusters → less zoom; tight clusters → more zoom.
+    // maxZoom is relaxed for small clusters and stricter for large ones so
+    // the map never over-zooms into empty space.
+    const spanDeg = Math.max(maxLng - minLng, (maxLat - minLat) * 1.5);
+    const maxZoom = spanDeg > 0.5 ? 13 : spanDeg > 0.1 ? 15 : 17;
+
+    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
+      padding: 100,
+      maxZoom,
+      duration: 900,
+      essential: true,
     });
   }, []);
 
@@ -2327,6 +2356,12 @@ export default function SoundMapInner() {
             onSelectPin={(pin) => {
               setSelected(pin);
               setSelectedCluster(null);
+              mapRef.current?.flyTo({
+                center: [pin.lng, pin.lat],
+                zoom: Math.max(mapRef.current.getZoom(), 15),
+                duration: 900,
+                essential: true,
+              });
             }}
           />
         )}
