@@ -61,13 +61,7 @@ GEMINI_API_KEY=AIza...
 
 YAMNet is a TF.js audio classifier that runs server-side. The model files (~14 MB) are **not committed to git** and must be downloaded separately.
 
-Run the download script:
-
-```bash
-bun scripts/download-yamnet.ts
-```
-
-> If that script doesn't exist yet, download manually — see [Manual YAMNet setup](#manual-yamnet-setup) below.
+Download the model files with `curl` — see [Manual YAMNet setup](#manual-yamnet-setup) below.
 
 The model files land in `public/yamnet-model/`:
 
