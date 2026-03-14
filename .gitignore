@@ -53,6 +53,7 @@ context.md
 SoundSoil-context.md
 Backend-overview-v2.md
 test*
+Frontend Elastic Search.md
 
 # YAMNet model artifacts (non-TF.js formats)
 models/
