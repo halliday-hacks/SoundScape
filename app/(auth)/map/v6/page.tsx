@@ -1,7 +1,7 @@
 "use client";
 
-import { APIProvider, Map } from "@vis.gl/react-google-maps";
-import { useMemo } from "react";
+import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { PixelOverlay, type OverlaySound } from "@/components/map/PixelOverlay";
 import { MapBackButton } from "@/components/map/MapBackButton";
 
@@ -11,17 +11,7 @@ export default function Page() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
 
   const center = useMemo(() => ({ lat: 10.7769, lng: 106.7009 }), []);
-  const sounds = useMemo<OverlaySound[]>(
-    () => [
-      { id: "hcmc-1", lat: 10.7769, lng: 106.7009, likeCount: 4 },
-      { id: "hcmc-2", lat: 10.7810, lng: 106.6950, likeCount: 14 },
-      { id: "hcmc-3", lat: 10.7740, lng: 106.7060, likeCount: 33 },
-      { id: "hcmc-4", lat: 10.7825, lng: 106.7030, likeCount: 8 },
-      { id: "hcmc-5", lat: 10.7795, lng: 106.6990, likeCount: 21 },
-      { id: "hcmc-6", lat: 10.7732, lng: 106.7040, likeCount: 2 },
-    ],
-    [],
-  );
+  const [sounds, setSounds] = useState<OverlaySound[]>([]);
 
   if (!apiKey) {
     return (
@@ -50,9 +40,100 @@ export default function Page() {
           mapId={MAP_ID}
           style={{ width: "100%", height: "100%" }}
         />
+        <ElasticSoundFetcher onUpdate={setSounds} />
         <PixelOverlay sounds={sounds} />
       </APIProvider>
     </div>
   );
+}
+
+type FetcherProps = {
+  onUpdate: (sounds: OverlaySound[]) => void;
+};
+
+function ElasticSoundFetcher({ onUpdate }: FetcherProps) {
+  const map = useMap();
+  const inFlight = useRef<AbortController | null>(null);
+  const lastKey = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!map) return;
+
+    const fetchForBounds = () => {
+      const bounds = map.getBounds();
+      if (!bounds) return;
+
+      const ne = bounds.getNorthEast();
+      const sw = bounds.getSouthWest();
+      const north = ne.lat();
+      const east = ne.lng();
+      const south = sw.lat();
+      const west = sw.lng();
+
+      const key = [
+        north.toFixed(3),
+        south.toFixed(3),
+        east.toFixed(3),
+        west.toFixed(3),
+      ].join(":");
+      if (key === lastKey.current) return;
+      lastKey.current = key;
+
+      if (inFlight.current) {
+        inFlight.current.abort();
+      }
+      const ac = new AbortController();
+      inFlight.current = ac;
+
+      const params = new URLSearchParams({
+        top_left_lat: north.toString(),
+        top_left_lon: west.toString(),
+        bottom_right_lat: south.toString(),
+        bottom_right_lon: east.toString(),
+        limit: "200",
+      });
+
+      fetch(`/api/search/map?${params.toString()}`, { signal: ac.signal })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (!data || !Array.isArray(data.hits)) {
+            onUpdate([]);
+            return;
+          }
+          const mapped: OverlaySound[] = data.hits
+            .filter(
+              (h: any) =>
+                h.geo &&
+                typeof h.geo.lat === "number" &&
+                typeof h.geo.lon === "number",
+            )
+            .map((h: any) => ({
+              id: h.upload_id ?? `${h.geo.lat},${h.geo.lon}`,
+              lat: h.geo.lat,
+              lng: h.geo.lon,
+              likeCount: typeof h.likes === "number" ? h.likes : 0,
+            }));
+          onUpdate(mapped);
+        })
+        .catch((err) => {
+          if ((err as any)?.name === "AbortError") return;
+          console.error("[ElasticSoundFetcher] map fetch error", err);
+          onUpdate([]);
+        });
+    };
+
+    // initial fetch once map is ready
+    fetchForBounds();
+    const idleListener = map.addListener("idle", fetchForBounds);
+
+    return () => {
+      idleListener.remove();
+      if (inFlight.current) {
+        inFlight.current.abort();
+      }
+    };
+  }, [map, onUpdate]);
+
+  return null;
 }
 
