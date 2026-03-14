@@ -4,7 +4,7 @@ import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PixelOverlay, type OverlaySound } from "@/components/map/PixelOverlay";
 import { MapBackButton } from "@/components/map/MapBackButton";
-import { MoodOverlay } from "@/components/map/MoodOverlay";
+import { BiomeOverlay } from "@/components/map/BiomeOverlay";
 
 const MAP_ID = "soundsoil-dark";
 
@@ -43,7 +43,7 @@ export default function Page() {
         />
         <ElasticSoundFetcher onUpdate={setSounds} />
         <PixelOverlay sounds={sounds} />
-        <MoodOverlay sounds={sounds} />
+        <BiomeOverlay sounds={sounds} />
       </APIProvider>
     </div>
   );
