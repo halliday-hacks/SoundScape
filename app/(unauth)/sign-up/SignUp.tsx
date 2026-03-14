@@ -26,6 +26,19 @@ export default function SignUp() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const getErrorMessage = (ctx: { error?: unknown }) => {
+    const error = (ctx as any)?.error;
+    if (!error) return "Something went wrong. Please try again.";
+    if (typeof error === "string") return error;
+    if (typeof error === "object") {
+      const message = (error as any).message;
+      const code = (error as any).code;
+      if (typeof message === "string" && message.length > 0) return message;
+      if (typeof code === "string" && code.length > 0) return code;
+    }
+    return "Something went wrong. Please try again.";
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -60,7 +73,7 @@ export default function SignUp() {
           setLoading(false);
           console.error(ctx.error);
           console.error("response", ctx.response);
-          toast.error(ctx.error.message);
+          toast.error(getErrorMessage(ctx));
         },
       },
     );
