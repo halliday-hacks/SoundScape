@@ -14,14 +14,14 @@ export async function GET(req: Request) {
   const limit = Math.min(parseInt(limitParam ?? "20", 10) || 20, 50);
 
   try {
-    // 1. Get all users from BetterAuth component
-    const users = await fetchQuery(api.betterAuth.users.getAllUsers, {});
+    // 1. Get all users from Convex wrapper
+    const users = await fetchQuery(api.users.getAllUsers, {});
 
     // 2. For each user, get their upload stats
     const usersWithStats = await Promise.all(
       users.map(async (user) => {
         const stats = await fetchQuery(api.uploads.getUserStats, {
-          userId: user._id,
+          userId: user._id as string,
         });
         return {
           id: user._id,
@@ -47,7 +47,7 @@ export async function GET(req: Request) {
   } catch (err) {
     console.error("[/api/users/leaderboard] Error:", err);
     return NextResponse.json(
-      { error: "Failed to fetch leaderboard" },
+      { error: "Failed to fetch leaderboard", details: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }

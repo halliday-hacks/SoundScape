@@ -11,6 +11,7 @@
 import type * as analyzeAudio from "../analyzeAudio.js";
 import type * as auth from "../auth.js";
 import type * as classificationEvents from "../classificationEvents.js";
+import type * as cleanSeedData from "../cleanSeedData.js";
 import type * as crons from "../crons.js";
 import type * as elastic from "../elastic.js";
 import type * as email from "../email.js";
@@ -21,6 +22,7 @@ import type * as emails_verifyEmail from "../emails/verifyEmail.js";
 import type * as emails_verifyOTP from "../emails/verifyOTP.js";
 import type * as http from "../http.js";
 import type * as uploads from "../uploads.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -32,6 +34,7 @@ declare const fullApi: ApiFromModules<{
   analyzeAudio: typeof analyzeAudio;
   auth: typeof auth;
   classificationEvents: typeof classificationEvents;
+  cleanSeedData: typeof cleanSeedData;
   crons: typeof crons;
   elastic: typeof elastic;
   email: typeof email;
@@ -42,6 +45,7 @@ declare const fullApi: ApiFromModules<{
   "emails/verifyOTP": typeof emails_verifyOTP;
   http: typeof http;
   uploads: typeof uploads;
+  users: typeof users;
 }>;
 
 /**

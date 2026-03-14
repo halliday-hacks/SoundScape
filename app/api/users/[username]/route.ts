@@ -25,7 +25,7 @@ export async function GET(
 
   try {
     // 1. Get user by username
-    const user = await fetchQuery(api.betterAuth.users.getByUsername, {
+    const user = await fetchQuery(api.users.getByUsername, {
       username,
     });
 
@@ -35,13 +35,13 @@ export async function GET(
 
     // 2. Get their uploads
     const uploads = await fetchQuery(api.uploads.getByUserId, {
-      userId: user._id,
+      userId: user._id as string,
       limit: 50,
     });
 
     // 3. Get their stats
     const stats = await fetchQuery(api.uploads.getUserStats, {
-      userId: user._id,
+      userId: user._id as string,
     });
 
     return NextResponse.json({
@@ -60,23 +60,24 @@ export async function GET(
       uploads: uploads.map((u) => ({
         id: u._id,
         title: u.title,
-        description: u.description,
-        storageId: u.storageId,
-        lat: u.lat,
-        lon: u.lon,
-        locationLabel: u.locationLabel,
-        dominantClass: u.dominantClass,
-        tags: u.tags,
+        description: u.description ?? null,
+        storageId: u.storageId ?? null,
+        lat: u.lat ?? null,
+        lon: u.lon ?? null,
+        locationLabel: u.locationLabel ?? null,
+        dominantClass: u.dominantClass ?? null,
+        tags: u.tags ?? [],
         likeCount: u.likeCount,
         listenCount: u.listenCount,
-        durationSeconds: u.durationSeconds,
+        durationSeconds: u.durationSeconds ?? null,
+        biodiversityScore: u.biodiversityScore ?? null,
         createdAt: u._creationTime,
       })),
     });
   } catch (err) {
     console.error(`[/api/users/${username}] Error:`, err);
     return NextResponse.json(
-      { error: "Failed to fetch user profile" },
+      { error: "Failed to fetch user profile", details: err instanceof Error ? err.message : String(err) },
       { status: 500 }
     );
   }

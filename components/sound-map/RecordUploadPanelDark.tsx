@@ -127,6 +127,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
   // ── File upload ──
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [fileDuration, setFileDuration] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Meta form ──
@@ -475,7 +476,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         storageId,
         title: title.trim(),
         description: description.trim() || undefined,
-        durationSeconds: mode === "record" ? recordingTime : undefined,
+        durationSeconds: mode === "record" ? recordingTime : (mode === "file" && fileDuration > 0 ? fileDuration : undefined),
         lat: location?.lat,
         lon: location?.lon,
         locationLabel: location?.label || undefined,
@@ -1263,6 +1264,13 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                     const f = e.target.files?.[0];
                     if (!f) return;
                     setSelectedFile(f);
+
+                    // Extract duration
+                    const audio = new Audio(URL.createObjectURL(f));
+                    audio.onloadedmetadata = () => {
+                      setFileDuration(audio.duration);
+                    };
+
                     if (!title)
                       setTitle(f.name.replace(/\.[^/.]+$/, ""));
                   }}
