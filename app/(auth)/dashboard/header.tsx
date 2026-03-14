@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { api } from "@/convex/_generated/api";
 import { Button } from "@/components/ui/button";
-import { LogOut, Settings } from "lucide-react";
+import { LogOut, Map, Settings } from "lucide-react";
 import { Preloaded } from "convex/react";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
@@ -58,6 +58,14 @@ export const Header = ({
     <header className="flex items-center justify-between">
       <UserProfile preloadedUserQuery={preloadedUserQuery} />
       <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" asChild>
+          <Link href="/map">
+            <div className="flex items-center gap-2">
+              <Map size={16} />
+              Sound Map
+            </div>
+          </Link>
+        </Button>
         <Button variant="ghost" size="sm" asChild>
           <Link href="/settings">
             <div className="flex items-center gap-2">
