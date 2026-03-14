@@ -41,10 +41,12 @@ export default defineSchema({
     likeCount: v.number(),
     listenCount: v.number(),
     tags: v.optional(v.array(v.string())),
+    elasticSynced: v.optional(v.boolean()),
   })
     .index("by_userId", ["userId"])
     .index("by_likeCount", ["likeCount"])
-    .index("by_listenCount", ["listenCount"]),
+    .index("by_listenCount", ["listenCount"])
+    .index("by_elasticSynced", ["elasticSynced"]),
 
   userLikes: defineTable({
     userId: v.string(),

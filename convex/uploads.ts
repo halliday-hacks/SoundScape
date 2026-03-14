@@ -1,4 +1,5 @@
-import { mutation, query } from "./_generated/server";
+import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 const uploadFields = v.object({
@@ -17,6 +18,7 @@ const uploadFields = v.object({
   likeCount: v.number(),
   listenCount: v.number(),
   tags: v.optional(v.array(v.string())),
+  elasticSynced: v.optional(v.boolean()),
 });
 
 export const create = mutation({
@@ -35,11 +37,14 @@ export const create = mutation({
   },
   returns: v.id("uploads"),
   handler: async (ctx, args) => {
-    return await ctx.db.insert("uploads", {
+    const id = await ctx.db.insert("uploads", {
       ...args,
       likeCount: 0,
       listenCount: 0,
+      elasticSynced: false,
     });
+    await ctx.scheduler.runAfter(0, internal.elastic.syncUpload, { id });
+    return id;
   },
 });
 
@@ -146,6 +151,53 @@ export const getStorageUrl = query({
  * Delete an upload and its associated audio file from storage.
  * Also removes any userLikes for this upload.
  */
+// Internal query used by the elastic sync action (avoids exposing to public API)
+export const getByIdInternal = internalQuery({
+  args: { uploadId: v.id("uploads") },
+  returns: v.union(
+    v.object({
+      _id: v.id("uploads"),
+      _creationTime: v.number(),
+      userId: v.string(),
+      storageId: v.optional(v.string()),
+      title: v.string(),
+      description: v.optional(v.string()),
+      durationSeconds: v.optional(v.float64()),
+      lat: v.optional(v.float64()),
+      lon: v.optional(v.float64()),
+      locationLabel: v.optional(v.string()),
+      biodiversityScore: v.optional(v.float64()),
+      dominantClass: v.optional(v.string()),
+      likeCount: v.number(),
+      listenCount: v.number(),
+      tags: v.optional(v.array(v.string())),
+      elasticSynced: v.optional(v.boolean()),
+    }),
+    v.null()
+  ),
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.uploadId);
+  },
+});
+
+export const markSynced = internalMutation({
+  args: { uploadId: v.id("uploads") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.uploadId, { elasticSynced: true });
+    return null;
+  },
+});
+
+export const resetSyncFlag = internalMutation({
+  args: { uploadId: v.id("uploads") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.uploadId, { elasticSynced: false });
+    return null;
+  },
+});
+
 export const deleteUpload = mutation({
   args: { uploadId: v.id("uploads") },
   returns: v.null(),
