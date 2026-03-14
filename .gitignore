@@ -54,6 +54,6 @@ SoundSoil-context.md
 Backend-overview-v2.md
 test-elastic.ts
 
-# YAMNet model artifacts (regenerate with scripts/)
+# YAMNet model artifacts (non-TF.js formats)
 models/
-public/yamnet-model/
+# public/yamnet-model/ is intentionally tracked — TF.js model files (~14 MB)

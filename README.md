@@ -57,73 +57,18 @@ ANTHROPIC_API_KEY=sk-ant-...
 GEMINI_API_KEY=AIza...
 ```
 
-### 4. Set up the YAMNet model locally
+### 4. Set up the YAMNet model
 
-YAMNet is a TF.js audio classifier that runs server-side. The model files (~14 MB) are **not committed to git** and must be downloaded separately.
-
-Download the model files with `curl` — see [Manual YAMNet setup](#manual-yamnet-setup) below.
-
-The model files land in `public/yamnet-model/`:
-
-```
-public/yamnet-model/
-  model.json
-  group1-shard1of4.bin
-  group1-shard2of4.bin
-  group1-shard3of4.bin
-  group1-shard4of4.bin
-```
-
-The API route loads the model from `public/yamnet-model/model.json` at runtime using a `file://` URL. No environment variable needed for local dev.
-
-#### Manual YAMNet setup
-
-If you prefer to download manually, grab the files from the TensorFlow Hub:
+The YAMNet TF.js model files (~14 MB) are committed to the repo under `public/yamnet-model/`, so a normal `git clone` is all that's needed. Verify they're present:
 
 ```bash
-mkdir -p public/yamnet-model
-
-# model graph
-curl -L "https://storage.googleapis.com/tfhub-tfjs-modules/google/tfjs-model/yamnet/tfjs/1/model.json" \
-  -o public/yamnet-model/model.json
-
-# weight shards (check model.json for the exact shard names — they may differ)
-curl -L "https://storage.googleapis.com/tfhub-tfjs-modules/google/tfjs-model/yamnet/tfjs/1/group1-shard1of4.bin" \
-  -o public/yamnet-model/group1-shard1of4.bin
-
-curl -L "https://storage.googleapis.com/tfhub-tfjs-modules/google/tfjs-model/yamnet/tfjs/1/group1-shard2of4.bin" \
-  -o public/yamnet-model/group1-shard2of4.bin
-
-curl -L "https://storage.googleapis.com/tfhub-tfjs-modules/google/tfjs-model/yamnet/tfjs/1/group1-shard3of4.bin" \
-  -o public/yamnet-model/group1-shard3of4.bin
-
-curl -L "https://storage.googleapis.com/tfhub-tfjs-modules/google/tfjs-model/yamnet/tfjs/1/group1-shard4of4.bin" \
-  -o public/yamnet-model/group1-shard4of4.bin
+bun scripts/setup-yamnet.ts
 ```
 
-#### Verify the model works
+If any files are missing (e.g. after a shallow clone), fetch the full history:
 
 ```bash
-# Requires a WAV file — convert with ffmpeg if needed:
-# ffmpeg -i input.mp3 -ar 16000 -ac 1 output.wav
-
-bun scripts/test-yamnet.ts path/to/audio.wav
-```
-
-Expected output:
-
-```json
-{
-  "primary_label": "Bird",
-  "primary_confidence": 0.92,
-  "duration_s": 3.5,
-  "top_labels": [
-    { "label": "Bird", "score": 0.92 },
-    { "label": "Animal", "score": 0.87 },
-    ...
-  ],
-  ...
-}
+git fetch --unshallow
 ```
 
 ### 5. Run the app
