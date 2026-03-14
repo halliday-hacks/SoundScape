@@ -1,15 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import {
+  Map,
+  MapMarker,
+  MarkerContent,
+  MapControls,
+  useMap,
+  type MapRef,
+} from "@/components/ui/map";
+import type MapLibreGL from "maplibre-gl";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { Id } from "@/convex/_generated/dataModel";
 import RecordUploadPanelDark, {
   type UploadResult,
 } from "./RecordUploadPanelDark";
+import {
+  ScrubBarContainer,
+  ScrubBarTrack,
+  ScrubBarProgress,
+  ScrubBarThumb,
+  ScrubBarTimeLabel,
+} from "@/components/ui/scrub-bar";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType =
@@ -1416,6 +1429,11 @@ function formatDuration(secs: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function parseDuration(str: string): number {
+  const [m, s] = str.split(":").map(Number);
+  return (m || 0) * 60 + (s || 0);
+}
+
 type ConvexUpload = {
   _id: string;
   _creationTime: number;
@@ -1498,15 +1516,15 @@ function searchPins(pins: Pin[], query: string): Pin[] {
 }
 
 // ─── Clustering ───────────────────────────────────────────────────────────────
-function computeItems(pins: Pin[], map: L.Map | null): MapItem[] {
+function computeItems(pins: Pin[], map: MapLibreGL.Map | null): MapItem[] {
   if (!map) return pins.map((p) => ({ kind: "single", pin: p }));
   const DIST = 60;
   const used = new Set<number>();
   const items: MapItem[] = [];
-  const pts = pins.map((p) => ({
-    pin: p,
-    px: map.latLngToContainerPoint([p.lat, p.lng]),
-  }));
+  const pts = pins.map((p) => {
+    const px = map.project([p.lng, p.lat]);
+    return { pin: p, px };
+  });
   for (let i = 0; i < pts.length; i++) {
     if (used.has(i)) continue;
     const g = [i];
@@ -1539,41 +1557,9 @@ function computeItems(pins: Pin[], map: L.Map | null): MapItem[] {
   return items;
 }
 
-// ─── Icon factories ────────────────────────────────────────────────────────────
-function makePin(type: SoundType): L.DivIcon {
-  const { icon } = CFG[type];
-  const { name, dur, timing } = ANIM[type];
-  return L.divIcon({
-    className: "",
-    iconSize: [40, 40],
-    iconAnchor: [20, 20],
-    html: `<span style="
-      font-size:22px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      width:32px;
-      height:32px;
-      border-radius:9999px;
-      background:rgba(0,0,0,0.45);
-      box-shadow:0 0 0 2px #fff, 0 4px 8px rgba(0,0,0,0.7);
-      line-height:1;
-      cursor:pointer;
-      user-select:none;
-      animation:${name} ${dur} ${timing} infinite;
-    ">${icon}</span>`,
-  });
-}
-
-function makeCluster(count: number, dominantType: SoundType): L.DivIcon {
-  const size = count >= 30 ? 50 : count >= 15 ? 42 : count >= 5 ? 36 : 32;
-  const fs = count >= 30 ? 16 : count >= 15 ? 14 : 12;
-
-  // SoundSoil UI/UX protocol:
-  // - UI shell colors only (no pixel-world palette mixing)
-  // - No shadows/gradients
-  // - More sounds => brighter accent, fewer => dimmer (same hue)
-  const t = Math.max(0, Math.min(1, (count - 1) / 30)); // 1..31+ -> 0..1
+// ─── Cluster color helper ─────────────────────────────────────────────────────
+function clusterBg(count: number): string {
+  const t = Math.max(0, Math.min(1, (count - 1) / 30));
   const lerp = (a: number, b: number, x: number) => a + (b - a) * x;
   const hexToRgb = (hex: string) => {
     const h = hex.replace("#", "").trim();
@@ -1596,39 +1582,23 @@ function makeCluster(count: number, dominantType: SoundType): L.DivIcon {
     g: Math.round(lerp(a.g, b.g, x)),
     b: Math.round(lerp(a.b, b.b, x)),
   });
-  const rgbToCss = (rgb: { r: number; g: number; b: number }) =>
-    `rgb(${rgb.r} ${rgb.g} ${rgb.b})`;
-
-  // Use protocol token: Primary action green (#4A9B3F)
-  // Inverted scale per UX: more sounds => darker green, fewer => lighter green (same hue).
   const token = hexToRgb("#4A9B3F");
   const surface = hexToRgb("#1E2118");
   const text = hexToRgb("#EDE8DC");
-  const light = mix(token, text, 0.38); // lighter green for small clusters
-  const dark = mix(token, surface, 0.72); // darker green for large clusters
-  const bg = rgbToCss(mix(light, dark, t));
-
-  return L.divIcon({
-    className: "",
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.90);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="color:#EDE8DC;font-size:${fs}px;font-weight:900;letter-spacing:-0.5px;">${count}</span></div>`,
-  });
+  const light = mix(token, text, 0.38);
+  const dark = mix(token, surface, 0.72);
+  const c = mix(light, dark, t);
+  return `rgb(${c.r} ${c.g} ${c.b})`;
 }
 
-// ─── Map styles + chill keyframes ─────────────────────────────────────────────
-function MapStyles() {
-  useMapEvents({});
+// ─── Map keyframes (injected once) ──────────────────────────────────────────
+function MapKeyframes() {
   useEffect(() => {
-    const id = "map-styles";
+    const id = "soundmap-keyframes";
     if (document.getElementById(id)) return;
     const el = document.createElement("style");
     el.id = id;
     el.textContent = `
-      .leaflet-tile { filter:brightness(1.0) contrast(1.02) saturate(0.88) !important; }
-      .leaflet-container { background:#111 !important; }
-      .leaflet-control-zoom { display:none !important; }
-      .leaflet-control-attribution { background:rgba(0,0,0,.45)!important;color:rgba(255,255,255,.15)!important;font-size:9px!important; }
       @keyframes birdFloat     { 0%,100%{transform:translateY(0)}    50%{transform:translateY(-4px)} }
       @keyframes carDrift      { 0%,100%{transform:translateX(0)}    50%{transform:translateX(3px)} }
       @keyframes musicSway     { 0%,100%{transform:rotate(-4deg) scale(1)} 50%{transform:rotate(4deg) scale(1.08)} }
@@ -1643,7 +1613,7 @@ function MapStyles() {
   return null;
 }
 
-// ─── Cluster tracker ──────────────────────────────────────────────────────────
+// ─── Cluster tracker (MapLibre) ───────────────────────────────────────────────
 function ClusterTracker({
   pins,
   onItems,
@@ -1653,20 +1623,26 @@ function ClusterTracker({
   onItems: (i: MapItem[]) => void;
   onZoom: (z: number) => void;
 }) {
-  const map = useMapEvents({
-    zoomend: () => {
-      onZoom(map.getZoom());
-      onItems(computeItems(pins, map));
-    },
-    moveend: () => {
-      onItems(computeItems(pins, map));
-    },
-  });
+  const { map, isLoaded } = useMap();
+
   useEffect(() => {
-    onZoom(map.getZoom());
-    onItems(computeItems(pins, map));
+    if (!map || !isLoaded) return;
+
+    const update = () => {
+      onZoom(Math.round(map.getZoom()));
+      onItems(computeItems(pins, map));
+    };
+    update();
+
+    map.on("moveend", update);
+    map.on("zoomend", update);
+    return () => {
+      map.off("moveend", update);
+      map.off("zoomend", update);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pins]);
+  }, [map, isLoaded, pins]);
+
   return null;
 }
 
@@ -1876,11 +1852,12 @@ export default function SoundMapInner() {
   const [filter, setFilter] = useState<"all" | SoundType>("all");
   const [playing, setPlaying] = useState(false);
   const [mapItems, setMapItems] = useState<MapItem[]>([]);
-  const [zoom, setZoom] = useState(3);
+  const [, setZoom] = useState(3);
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
 
+  const mapRef = useRef<MapRef>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -1926,6 +1903,27 @@ export default function SoundMapInner() {
     setSelectedCluster(null);
   };
 
+  // ── Smooth flyTo on pin/cluster selection ──
+  const selectPin = useCallback((pin: Pin) => {
+    setSelected((p) => (p?.id === pin.id ? null : pin));
+    setSelectedCluster(null);
+    mapRef.current?.flyTo({
+      center: [pin.lng, pin.lat],
+      zoom: Math.max(mapRef.current.getZoom(), 12),
+      duration: 1200,
+    });
+  }, []);
+
+  const selectCluster = useCallback((cluster: Cluster) => {
+    setSelectedCluster(cluster);
+    setSelected(null);
+    mapRef.current?.flyTo({
+      center: [cluster.lng, cluster.lat],
+      zoom: Math.min(mapRef.current.getZoom() + 2, 18),
+      duration: 1000,
+    });
+  }, []);
+
   // Called after a successful upload — Convex query auto-refreshes so the pin
   // will appear once the query refetches (or immediately if optimistic)
   const handleUploadSuccess = useCallback((_result: UploadResult) => {
@@ -1961,52 +1959,101 @@ export default function SoundMapInner() {
       }}
     >
       {/* MAP */}
-      <MapContainer
-        center={[-37.8136, 144.9631]}
+      <Map
+        ref={mapRef}
+        center={[144.9631, -37.8136]}
         zoom={10}
-        style={{ width: "100%", height: "100%", background: "#111" }}
-        zoomControl={false}
         minZoom={2}
         maxZoom={18}
+        theme="dark"
+        className="w-full h-full"
       >
-        <MapStyles />
-        <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution="&copy; OSM"
-        />
+        <MapKeyframes />
         <ClusterTracker
           pins={visiblePins}
           onItems={handleItems}
           onZoom={handleZoom}
         />
+        <MapControls
+          position="bottom-right"
+          showZoom
+          showCompass
+          showLocate
+        />
         {mapItems.map((item, idx) =>
           item.kind === "single" ? (
-            <Marker
+            <MapMarker
               key={`s-${item.pin.id}`}
-              position={[item.pin.lat, item.pin.lng]}
-              icon={makePin(item.pin.type)}
-              eventHandlers={{
-                click: () => {
-                  setSelected((p) => (p?.id === item.pin.id ? null : item.pin));
-                  setSelectedCluster(null);
-                },
-              }}
-            />
+              longitude={item.pin.lng}
+              latitude={item.pin.lat}
+              onClick={() => selectPin(item.pin)}
+            >
+              <MarkerContent>
+                <span
+                  style={{
+                    fontSize: 22,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    width: 32,
+                    height: 32,
+                    borderRadius: 9999,
+                    background: "rgba(0,0,0,0.45)",
+                    boxShadow: "0 0 0 2px #fff, 0 4px 8px rgba(0,0,0,0.7)",
+                    lineHeight: 1,
+                    cursor: "pointer",
+                    userSelect: "none",
+                    animation: `${ANIM[item.pin.type].name} ${ANIM[item.pin.type].dur} ${ANIM[item.pin.type].timing} infinite`,
+                  }}
+                >
+                  {CFG[item.pin.type].icon}
+                </span>
+              </MarkerContent>
+            </MapMarker>
           ) : (
-            <Marker
+            <MapMarker
               key={`c-${idx}`}
-              position={[item.lat, item.lng]}
-              icon={makeCluster(item.pins.length, item.dominantType)}
-              eventHandlers={{
-                click: () => {
-                  setSelectedCluster(item);
-                  setSelected(null);
-                },
-              }}
-            />
+              longitude={item.lng}
+              latitude={item.lat}
+              onClick={() => selectCluster(item)}
+            >
+              <MarkerContent>
+                {(() => {
+                  const count = item.pins.length;
+                  const size = count >= 30 ? 50 : count >= 15 ? 42 : count >= 5 ? 36 : 32;
+                  const fs = count >= 30 ? 16 : count >= 15 ? 14 : 12;
+                  return (
+                    <div
+                      style={{
+                        width: size,
+                        height: size,
+                        borderRadius: "50%",
+                        background: clusterBg(count),
+                        border: "2px solid rgba(255,255,255,0.90)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <span
+                        style={{
+                          color: "#EDE8DC",
+                          fontSize: fs,
+                          fontWeight: 900,
+                          letterSpacing: -0.5,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </MarkerContent>
+            </MapMarker>
           ),
         )}
-      </MapContainer>
+      </Map>
 
       {/* ── SEARCH BAR (only top UI element) ── */}
       <div
@@ -2254,42 +2301,6 @@ export default function SoundMapInner() {
         </button>
       </div>
 
-      {/* ── ZOOM BUTTONS ── */}
-      <div
-        style={{
-          position: "absolute",
-          right: panelOpen ? 380 : 20,
-          bottom: 24,
-          zIndex: 1000,
-          display: "flex",
-          flexDirection: "column",
-          gap: 4,
-          transition: "right .35s cubic-bezier(.4,0,.2,1)",
-        }}
-      >
-        {["+", "−"].map((b) => (
-          <div
-            key={b}
-            style={{
-              width: 36,
-              height: 36,
-              background: "rgba(12,12,12,.9)",
-              backdropFilter: "blur(16px)",
-              border: "1px solid rgba(255,255,255,.1)",
-              borderRadius: 9,
-              color: "rgba(255,255,255,.55)",
-              fontSize: 20,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-            }}
-          >
-            {b}
-          </div>
-        ))}
-      </div>
-
       {/* ── SIDE PANEL ── */}
       <div
         style={{
@@ -2433,8 +2444,8 @@ export default function SoundMapInner() {
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
                       alignItems: "center",
+                      gap: 10,
                       marginTop: 12,
                     }}
                   >
@@ -2453,24 +2464,32 @@ export default function SoundMapInner() {
                         alignItems: "center",
                         justifyContent: "center",
                         fontWeight: 700,
+                        flexShrink: 0,
                       }}
                     >
                       {playing ? "⏸" : "▶"}
                     </button>
-                    <div
-                      style={{
-                        flex: 1,
-                        margin: "0 12px",
-                        height: 2,
-                        background: "rgba(255,255,255,.08)",
-                        borderRadius: 2,
-                      }}
-                    />
-                    <span
-                      style={{ color: "rgba(255,255,255,.3)", fontSize: 11 }}
+                    <ScrubBarContainer
+                      duration={parseDuration(selected.duration)}
+                      value={0}
+                      className="flex-1 gap-2"
+                      style={{ "--soundmap-pin-color": S.color } as React.CSSProperties}
                     >
-                      0:00 / {selected.duration}
-                    </span>
+                      <ScrubBarTimeLabel
+                        time={0}
+                        className="text-[10px] w-7 shrink-0"
+                        style={{ color: "rgba(255,255,255,.45)" }}
+                      />
+                      <ScrubBarTrack className="h-1.5 bg-white/[0.08]">
+                        <ScrubBarProgress className="bg-transparent [&_[data-slot=progress-indicator]]:[background:var(--soundmap-pin-color)] rounded-full" />
+                        <ScrubBarThumb className="h-3 w-3 bg-white" />
+                      </ScrubBarTrack>
+                      <ScrubBarTimeLabel
+                        time={parseDuration(selected.duration)}
+                        className="text-[10px] w-7 shrink-0 text-right"
+                        style={{ color: "rgba(255,255,255,.25)" }}
+                      />
+                    </ScrubBarContainer>
                   </div>
                 </>
               )}
@@ -2584,7 +2603,7 @@ export default function SoundMapInner() {
 }
 
 // ─── AudioPlayerConvex ────────────────────────────────────────────────────────
-// Fetches the real audio URL from Convex storage and renders a native player.
+// Fetches the real audio URL from Convex storage and renders a scrub-bar player.
 function AudioPlayerConvex({
   storageId,
   color,
@@ -2595,31 +2614,135 @@ function AudioPlayerConvex({
   duration: string;
 }) {
   const url = useQuery(api.uploads.getStorageUrl, { storageId });
+  const playerRef = useRef<HTMLAudioElement | null>(null);
+  const scrubbingRef = useRef(false);
+  const [playing, setPlaying] = useState(false);
+  const [playerTime, setPlayerTime] = useState(0);
+  const [playerDuration, setPlayerDuration] = useState(0);
+
+  useEffect(() => {
+    if (!url) return;
+
+    const audio = new Audio(url);
+    playerRef.current = audio;
+
+    const onMeta = () => {
+      const d = audio.duration;
+      if (Number.isFinite(d) && d > 0) setPlayerDuration(d);
+    };
+    const onTime = () => {
+      if (!scrubbingRef.current) setPlayerTime(audio.currentTime);
+    };
+    const onEnd = () => {
+      setPlaying(false);
+      setPlayerTime(0);
+    };
+
+    audio.addEventListener("loadedmetadata", onMeta);
+    audio.addEventListener("timeupdate", onTime);
+    audio.addEventListener("ended", onEnd);
+
+    return () => {
+      audio.pause();
+      audio.removeEventListener("loadedmetadata", onMeta);
+      audio.removeEventListener("timeupdate", onTime);
+      audio.removeEventListener("ended", onEnd);
+      audio.src = "";
+      playerRef.current = null;
+      setPlaying(false);
+      setPlayerTime(0);
+      setPlayerDuration(0);
+    };
+  }, [url]);
+
+  const togglePlay = () => {
+    if (!playerRef.current) return;
+    if (playing) {
+      playerRef.current.pause();
+    } else {
+      playerRef.current.play();
+    }
+    setPlaying((p) => !p);
+  };
+
+  const handleScrub = (time: number) => {
+    if (!playerRef.current) return;
+    playerRef.current.currentTime = time;
+    setPlayerTime(time);
+  };
+
+  const displayDuration = playerDuration || parseDuration(duration);
+
+  if (!url) {
+    return (
+      <div
+        style={{
+          color: "rgba(255,255,255,.3)",
+          fontSize: 11,
+          textAlign: "center",
+          padding: "8px 0",
+        }}
+      >
+        Loading audio…
+      </div>
+    );
+  }
+
   return (
     <div>
       <Waveform color={color} />
-      <div style={{ marginTop: 10 }}>
-        {url ? (
-          <audio src={url} controls style={{ width: "100%", height: 34 }} />
-        ) : (
-          <div
-            style={{
-              color: "rgba(255,255,255,.3)",
-              fontSize: 11,
-              textAlign: "center",
-              padding: "8px 0",
-            }}
-          >
-            Loading audio…
-          </div>
-        )}
-        <div
-          style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <button
+          onClick={togglePlay}
+          style={{
+            width: 36,
+            height: 36,
+            background: color,
+            border: "none",
+            borderRadius: "50%",
+            color: "#fff",
+            fontSize: 13,
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontWeight: 700,
+            flexShrink: 0,
+          }}
         >
-          <span style={{ color: "rgba(255,255,255,.3)", fontSize: 11 }}>
-            {duration}
-          </span>
-        </div>
+          {playing ? "⏸" : "▶"}
+        </button>
+        <ScrubBarContainer
+          duration={displayDuration}
+          value={playerTime}
+          onScrub={handleScrub}
+          onScrubStart={() => { scrubbingRef.current = true; }}
+          onScrubEnd={() => { scrubbingRef.current = false; }}
+          className="flex-1 gap-2"
+          style={{ "--soundmap-pin-color": color } as React.CSSProperties}
+        >
+          <ScrubBarTimeLabel
+            time={playerTime}
+            className="text-[10px] w-7 shrink-0"
+            style={{ color: "rgba(255,255,255,.45)" }}
+          />
+          <ScrubBarTrack className="h-1.5 bg-white/[0.08]">
+            <ScrubBarProgress className="bg-transparent [&_[data-slot=progress-indicator]]:[background:var(--soundmap-pin-color)] rounded-full" />
+            <ScrubBarThumb className="h-3 w-3 bg-white" />
+          </ScrubBarTrack>
+          <ScrubBarTimeLabel
+            time={displayDuration}
+            className="text-[10px] w-7 shrink-0 text-right"
+            style={{ color: "rgba(255,255,255,.25)" }}
+          />
+        </ScrubBarContainer>
       </div>
     </div>
   );
