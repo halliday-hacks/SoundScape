@@ -53,3 +53,7 @@ context.md
 SoundSoil-context.md
 Backend-overview-v2.md
 test-elastic.ts
+
+# YAMNet model artifacts (regenerate with scripts/)
+models/
+public/yamnet-model/

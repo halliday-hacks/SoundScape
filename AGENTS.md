@@ -9,16 +9,79 @@ Convex + Better Auth + Next.js hackathon starter app.
 - **Auth:** Better Auth via `@convex-dev/better-auth`
 - **Styling:** Tailwind CSS v4, shadcn/ui
 - **Language:** TypeScript (strict mode)
+- **AI:** Anthropic Claude (pixel-art GIF generation), Google Gemini + Veo 2.0 (video generation)
 
 ## Project Structure
 
 ```
-app/           → Next.js app router pages and layouts
-components/    → React UI components (shadcn/ui)
-convex/        → Convex backend (schema, functions, auth, http)
-lib/           → Shared utilities and client config
-public/        → Static assets
+app/                      → Next.js app router pages and layouts
+  soundsoil/page.tsx      → SoundSoil UI (mode toggle, upload, progress, result)
+  api/soundsoil/route.ts  → SSE pipeline: YAMNet → Claude/GIF or Gemini/Veo
+components/               → React UI components (shadcn/ui)
+convex/                   → Convex backend (schema, functions, auth, http)
+lib/                      → Shared utilities and client config
+  yamnet-analyzer.ts      → TF.js YAMNet audio classifier
+scripts/                  → CLI tools
+  test-yamnet.ts          → WAV → YAMNet → JSON (used by API route via execFileSync)
+  generate-pixel-art.ts   → WAV → YAMNet → Claude → GIF (offline)
+public/                   → Static assets
 ```
+
+## SoundSoil
+
+SoundSoil is a feature that converts audio files into visual art using a two-mode pipeline.
+
+### Pipeline
+
+```
+Audio upload → YAMNet (TF.js audio classifier) → Claude or Veo
+```
+
+**GIF mode** (fast, ~10–30s):
+
+- Step 1 — YAMNet classifies the audio (top-5 labels + confidence)
+- Step 2 — Claude Haiku generates a pixel-art `drawFrame()` function body for node-canvas
+- Step 3 — GIF encoder renders 60 frames at 12fps → returns `data:image/gif;base64,...`
+
+**Veo mode** (slow, ~1–3 min):
+
+- Step 1 — YAMNet classifies the audio
+- Step 2 — Gemini Flash (`gemini-2.5-flash`) writes a cinematic pixel-art Veo prompt from the labels
+- Step 3 — Veo 2.0 (`veo-2.0-generate-001`) generates a silent 8s 720p 16:9 MP4 → returns `data:video/mp4;base64,...`
+
+The frontend (`app/soundsoil/page.tsx`) streams SSE progress events and renders either `<img>` (GIF) or `<video>` (MP4).
+
+### Veo Prompt Rules
+
+The Gemini prompt-builder (`buildVeoPrompt`) enforces:
+
+- Style: retro pixel art, 16-bit, chunky pixels, limited palette (8–16 colours), scanlines
+- No audio cues — do NOT mention sound, music, dialogue, or any auditory elements
+- No people or faces
+- Static or slow-pan camera only
+- Under 80 words
+
+### Environment Variables
+
+| Variable            | Used by                                                |
+| ------------------- | ------------------------------------------------------ |
+| `ANTHROPIC_API_KEY` | Claude (GIF mode, step 2)                              |
+| `GEMINI_API_KEY`    | Gemini Flash (Veo prompt) + Veo 2.0 (video generation) |
+
+### API Route
+
+`POST /api/soundsoil` — public (whitelisted in `proxy.ts`)
+
+- Input: `multipart/form-data` with `audio` (File) and `mode` (`"gif"` or `"veo"`)
+- Output: `text/event-stream` SSE
+  - `progress` → `{ step: 1|2|3, label: string, detail?: string, frameProgress?: number }`
+  - `done` → `{ gif: "data:image/gif;base64,..." }` or `{ video: "data:video/mp4;base64,..." }`
+  - `error` → `{ message: string }`
+
+### Available Gemini Models
+
+Use `gemini-2.5-flash` for text generation (not versioned preview aliases — they expire).
+Use `veo-2.0-generate-001` for video generation.
 
 ## Convex Guidelines
 
@@ -136,13 +199,13 @@ bun run lint         # ESLint + TypeScript checks
 Skills live in `.agents/skills/` and are symlinked into each agent's config directory
 (e.g., `.claude/skills/`, `.cursor/rules/`). All agents on this project share the same skills.
 
-| Skill | Source | Purpose |
-|-------|--------|---------|
-| `convex` | waynesutton/convexskills | Convex development patterns, schema design, queries, mutations |
-| `better-auth-best-practices` | better-auth/skills | Better Auth integration patterns for TypeScript apps |
-| `better-auth-security-best-practices` | better-auth/skills | Rate limiting, CSRF, session security, OAuth security |
-| `shadcn-ui` | jezweb/claude-skills | shadcn/ui component patterns and Tailwind v4 integration |
-| `vercel-react-best-practices` | vercel-labs/agent-skills | React/Next.js performance optimization from Vercel Engineering |
+| Skill                                 | Source                   | Purpose                                                        |
+| ------------------------------------- | ------------------------ | -------------------------------------------------------------- |
+| `convex`                              | waynesutton/convexskills | Convex development patterns, schema design, queries, mutations |
+| `better-auth-best-practices`          | better-auth/skills       | Better Auth integration patterns for TypeScript apps           |
+| `better-auth-security-best-practices` | better-auth/skills       | Rate limiting, CSRF, session security, OAuth security          |
+| `shadcn-ui`                           | jezweb/claude-skills     | shadcn/ui component patterns and Tailwind v4 integration       |
+| `vercel-react-best-practices`         | vercel-labs/agent-skills | React/Next.js performance optimization from Vercel Engineering |
 
 To add more skills: `npx skills find <query>` then `npx skills add <package> -y`
 

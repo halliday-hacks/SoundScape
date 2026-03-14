@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
-const unauthRoutes = ["/sign-in", "/sign-up", "/reset-password"];
+const unauthRoutes = ["/sign-in", "/sign-up", "/reset-password", "/soundsoil", "/api/soundsoil"];
 
 // THIS IS NOT SECURE!
 // This is the recommended approach to optimistically redirect users
