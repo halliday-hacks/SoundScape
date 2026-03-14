@@ -189,9 +189,23 @@ function makePin(type: SoundType): L.DivIcon {
   const { name, dur, timing } = ANIM[type];
   return L.divIcon({
     className: "",
-    iconSize:   [36, 36],
-    iconAnchor: [18, 18],
-    html: `<span style="font-size:24px;display:block;line-height:1;cursor:pointer;user-select:none;filter:drop-shadow(0 2px 5px rgba(0,0,0,0.7));animation:${name} ${dur} ${timing} infinite;">${icon}</span>`,
+    iconSize:   [40, 40],
+    iconAnchor: [20, 20],
+    html: `<span style="
+      font-size:22px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:32px;
+      height:32px;
+      border-radius:9999px;
+      background:rgba(0,0,0,0.45);
+      box-shadow:0 0 0 2px #fff, 0 4px 8px rgba(0,0,0,0.7);
+      line-height:1;
+      cursor:pointer;
+      user-select:none;
+      animation:${name} ${dur} ${timing} infinite;
+    ">${icon}</span>`,
   });
 }
 
