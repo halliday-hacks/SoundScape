@@ -29,7 +29,7 @@ export default defineSchema({
 
   uploads: defineTable({
     userId: v.string(),
-    storageId: v.id("_storage"), // Convex file storage reference
+    storageId: v.optional(v.id("_storage")), // Convex file storage reference
     title: v.string(),
     description: v.optional(v.string()),
     durationSeconds: v.optional(v.float64()),
