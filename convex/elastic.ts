@@ -1,24 +1,8 @@
 "use node";
 
-import { internalAction, internalQuery } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
-
-/**
- * Fetch all uploads that haven't been synced to Elastic yet.
- * Used by the cron sweep.
- */
-export const getUnsynced = internalQuery({
-  args: {},
-  returns: v.array(v.id("uploads")),
-  handler: async (ctx) => {
-    const rows = await ctx.db
-      .query("uploads")
-      .withIndex("by_elasticSynced", (q) => q.eq("elasticSynced", false))
-      .collect();
-    return rows.map((r) => r._id);
-  },
-});
 
 /**
  * Sync a single upload document to Elastic Cloud.
@@ -115,7 +99,7 @@ export const sweepUnsynced = internalAction({
   args: {},
   returns: v.null(),
   handler: async (ctx) => {
-    const ids = await ctx.runQuery(internal.elastic.getUnsynced);
+    const ids = await ctx.runQuery(internal.uploads.getUnsynced);
     if (ids.length === 0) return null;
 
     console.log(`[elastic] Sweep found ${ids.length} unsynced upload(s)`);

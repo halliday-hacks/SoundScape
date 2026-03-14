@@ -10,6 +10,7 @@
 
 import type * as auth from "../auth.js";
 import type * as classificationEvents from "../classificationEvents.js";
+import type * as crons from "../crons.js";
 import type * as elastic from "../elastic.js";
 import type * as email from "../email.js";
 import type * as emails_components_BaseEmail from "../emails/components/BaseEmail.js";
@@ -29,6 +30,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   classificationEvents: typeof classificationEvents;
+  crons: typeof crons;
   elastic: typeof elastic;
   email: typeof email;
   "emails/components/BaseEmail": typeof emails_components_BaseEmail;

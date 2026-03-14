@@ -189,6 +189,19 @@ export const markSynced = internalMutation({
   },
 });
 
+// Used by the elastic cron sweep to find all uploads not yet pushed to Elastic
+export const getUnsynced = internalQuery({
+  args: {},
+  returns: v.array(v.id("uploads")),
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("uploads")
+      .withIndex("by_elasticSynced", (q) => q.eq("elasticSynced", false))
+      .collect();
+    return rows.map((r) => r._id);
+  },
+});
+
 export const resetSyncFlag = internalMutation({
   args: { uploadId: v.id("uploads") },
   returns: v.null(),
