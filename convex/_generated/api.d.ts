@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as analyzeAudio from "../analyzeAudio.js";
 import type * as auth from "../auth.js";
 import type * as classificationEvents from "../classificationEvents.js";
 import type * as crons from "../crons.js";
@@ -28,6 +29,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  analyzeAudio: typeof analyzeAudio;
   auth: typeof auth;
   classificationEvents: typeof classificationEvents;
   crons: typeof crons;
