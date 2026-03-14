@@ -4,6 +4,7 @@ import { APIProvider, Map, useMap } from "@vis.gl/react-google-maps";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { PixelOverlay, type OverlaySound } from "@/components/map/PixelOverlay";
 import { MapBackButton } from "@/components/map/MapBackButton";
+import { MoodOverlay } from "@/components/map/MoodOverlay";
 
 const MAP_ID = "soundsoil-dark";
 
@@ -42,6 +43,7 @@ export default function Page() {
         />
         <ElasticSoundFetcher onUpdate={setSounds} />
         <PixelOverlay sounds={sounds} />
+        <MoodOverlay sounds={sounds} />
       </APIProvider>
     </div>
   );
@@ -112,6 +114,7 @@ function ElasticSoundFetcher({ onUpdate }: FetcherProps) {
               lat: h.geo.lat,
               lng: h.geo.lon,
               likeCount: typeof h.likes === "number" ? h.likes : 0,
+              dominantClass: h.dominant_class ?? null,
             }));
           onUpdate(mapped);
         })

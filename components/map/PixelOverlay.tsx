@@ -8,6 +8,7 @@ export type OverlaySound = {
   lat: number;
   lng: number;
   likeCount?: number;
+  dominantClass?: string | null;
 };
 
 type Props = {
