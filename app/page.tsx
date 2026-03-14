@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { isAuthenticated } from "@/lib/auth-server";
 import { redirect } from "next/navigation";
+import { PixelCanvas } from "@/components/pixel-canvas";
 
 export default async function LandingPage() {
   if (await isAuthenticated()) {
@@ -9,46 +10,70 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-border">
-        <span className="text-lg font-semibold tracking-tight">
-          Hackathon Starter
-        </span>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" asChild>
+    <div className="min-h-screen flex flex-col bg-[#0D0F0A] text-[#EDE8DC]">
+      {/* Nav */}
+      <header className="flex items-center justify-between px-4 sm:px-6 py-3">
+        <div className="flex items-center gap-2">
+          <span className="font-bold tracking-tight text-[#EDE8DC]">SoundSoil</span>
+          <span className="hidden sm:inline text-xs text-[#9E9B8E] italic">
+            Listen to the Earth. Watch it Grow.
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            asChild
+            className="text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)]"
+          >
             <Link href="/sign-in">Sign in</Link>
           </Button>
-          <Button size="sm" asChild>
-            <Link href="/sign-up">Get started</Link>
+          <Button
+            size="sm"
+            asChild
+            className="bg-[#4A9B3F] text-[#EDE8DC] hover:bg-[#3d8434] border-0 shadow-none"
+          >
+            <Link href="/sign-up">Start Listening</Link>
           </Button>
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center px-6">
-        <div className="max-w-2xl text-center space-y-6">
-          <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">
-            Ship faster with a solid foundation
-          </h1>
-          <p className="text-lg text-muted-foreground max-w-lg mx-auto">
-            A production-ready starter with authentication, real-time data, and
-            everything you need to build your next project.
+      {/* Canvas hero — full bleed on mobile, max-width on desktop */}
+      <main className="flex-1 flex flex-col">
+        <div className="w-full sm:max-w-5xl sm:mx-auto sm:px-6">
+          <PixelCanvas />
+        </div>
+
+        {/* CTA — 16px clearance below canvas */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-4 pb-6">
+          <p className="text-sm text-[#9E9B8E] max-w-md text-center sm:text-left">
+            Real-time environmental audio classification that turns your neighbourhood
+            soundscape into a living pixel world.
           </p>
-          <div className="flex items-center justify-center gap-4">
-            <Button size="lg" asChild>
-              <Link href="/sign-up">Get started</Link>
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="bg-transparent border-[rgba(255,255,255,0.2)] text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)] shadow-none"
+            >
+              <Link href="/map">🗺 Sound Map</Link>
             </Button>
-            <Button variant="outline" size="lg" asChild>
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="bg-transparent border-[rgba(255,255,255,0.2)] text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)] shadow-none"
+            >
               <Link href="/sign-in">Sign in</Link>
             </Button>
-          </div>
-          <div className="flex items-center justify-center gap-6 pt-4 text-sm text-muted-foreground">
-            <span>Next.js 16</span>
-            <span className="text-border">|</span>
-            <span>Convex</span>
-            <span className="text-border">|</span>
-            <span>Better Auth</span>
-            <span className="text-border">|</span>
-            <span>Tailwind v4</span>
+            <Button
+              size="sm"
+              asChild
+              className="bg-[#4A9B3F] text-[#EDE8DC] hover:bg-[#3d8434] border-0 shadow-none"
+            >
+              <Link href="/sign-up">Start Listening →</Link>
+            </Button>
           </div>
         </div>
       </main>

@@ -55,7 +55,7 @@ export const Header = ({
     });
   };
   return (
-    <header className="flex items-center justify-between max-w-2xl mx-auto">
+    <header className="flex items-center justify-between">
       <UserProfile preloadedUserQuery={preloadedUserQuery} />
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="sm" asChild>
