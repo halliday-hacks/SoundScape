@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "soundsoil-dev",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev:frontend"],
+      "port": 3000,
+      "autoPort": false
+    }
+  ]
+}

@@ -9,6 +9,9 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as classificationEvents from "../classificationEvents.js";
+import type * as crons from "../crons.js";
+import type * as elastic from "../elastic.js";
 import type * as email from "../email.js";
 import type * as emails_components_BaseEmail from "../emails/components/BaseEmail.js";
 import type * as emails_magicLink from "../emails/magicLink.js";
@@ -16,6 +19,7 @@ import type * as emails_resetPassword from "../emails/resetPassword.js";
 import type * as emails_verifyEmail from "../emails/verifyEmail.js";
 import type * as emails_verifyOTP from "../emails/verifyOTP.js";
 import type * as http from "../http.js";
+import type * as uploads from "../uploads.js";
 
 import type {
   ApiFromModules,
@@ -25,6 +29,9 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  classificationEvents: typeof classificationEvents;
+  crons: typeof crons;
+  elastic: typeof elastic;
   email: typeof email;
   "emails/components/BaseEmail": typeof emails_components_BaseEmail;
   "emails/magicLink": typeof emails_magicLink;
@@ -32,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   "emails/verifyEmail": typeof emails_verifyEmail;
   "emails/verifyOTP": typeof emails_verifyOTP;
   http: typeof http;
+  uploads: typeof uploads;
 }>;
 
 /**

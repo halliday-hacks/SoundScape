@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "concurrently -n frontend,backend -c blue,green \"bun run dev:frontend\" \"bun run dev:backend\"",
     "dev:frontend": "next dev",
-    "dev:backend": "convex dev --typecheck-components",
-    "predev": "convex dev --skip-push",
+    "dev:backend": "npx convex dev --typecheck-components",
+    "predev": "npx convex dev --skip-push",
     "build": "next build",
     "lint": "next lint && tsc -p convex && eslint convex"
   },

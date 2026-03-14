@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# .vscode
+.vscode
+
 # agent config (local only)
 .claude/settings.local.json
 
@@ -45,3 +48,7 @@ yarn-error.log*
 next-env.d.ts
 
 certificates
+context.md
+
+SoundSoil-context.md
+Backend-overview-v2.md
