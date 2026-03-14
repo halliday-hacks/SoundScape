@@ -16,6 +16,11 @@ import { Loader2 } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 
+// Helper to safely extract error message from BetterAuth error context
+const getErrorMessage = (ctx: { error?: { message?: string; code?: string } }) => {
+  return ctx.error?.message || ctx.error?.code || "An unexpected error occurred. Please try again.";
+};
+
 export default function SignIn() {
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -46,7 +51,7 @@ export default function SignIn() {
         },
         onError: (ctx) => {
           setOtpLoading(false);
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -80,7 +85,7 @@ export default function SignIn() {
         },
         onError: (ctx) => {
           setAnonymousLoading(false);
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -101,7 +106,7 @@ export default function SignIn() {
         },
         onError: (ctx) => {
           setMagicLinkLoading(false);
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -121,7 +126,7 @@ export default function SignIn() {
           router.push("/");
         },
         onError: (ctx) => {
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -141,7 +146,7 @@ export default function SignIn() {
         },
         onError: (ctx) => {
           setOtpLoading(false);
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -161,7 +166,7 @@ export default function SignIn() {
         },
         onError: (ctx) => {
           setOtpLoading(false);
-          alert(ctx.error.message);
+          alert(getErrorMessage(ctx));
         },
       },
     );
@@ -184,7 +189,7 @@ export default function SignIn() {
           },
           onError: (ctx) => {
             setOtpLoading(false);
-            alert(ctx.error.message);
+            alert(getErrorMessage(ctx));
           },
         },
       );
@@ -204,7 +209,7 @@ export default function SignIn() {
           },
           onError: (ctx) => {
             setOtpLoading(false);
-            alert(ctx.error.message);
+            alert(getErrorMessage(ctx));
           },
         },
       );
