@@ -274,12 +274,13 @@ function makePin(type: SoundType): L.DivIcon {
 }
 
 function makeCluster(count: number, dominantType: SoundType): L.DivIcon {
-  const { color } = CFG[dominantType];
   const size = count >= 30 ? 50 : count >= 15 ? 42 : count >= 5 ? 36 : 32;
   const fs   = count >= 30 ? 16 : count >= 15 ? 14 : 12;
 
-  // Count-based spectrum: low counts are cooler/dimmer, high counts are warmer/brighter.
-  // Keep a subtle tint towards the dominant sound type so clusters still "read" as that type.
+  // SoundSoil UI/UX protocol:
+  // - UI shell colors only (no pixel-world palette mixing)
+  // - No shadows/gradients
+  // - More sounds => brighter accent, fewer => dimmer (same hue)
   const t = Math.max(0, Math.min(1, (count - 1) / 30)); // 1..31+ -> 0..1
   const lerp = (a: number, b: number, x: number) => a + (b - a) * x;
   const hexToRgb = (hex: string) => {
@@ -295,17 +296,20 @@ function makeCluster(count: number, dominantType: SoundType): L.DivIcon {
   });
   const rgbToCss = (rgb: { r: number; g: number; b: number }) => `rgb(${rgb.r} ${rgb.g} ${rgb.b})`;
 
-  const cool = { r: 56, g: 189, b: 248 };  // sky-400-ish
-  const hot  = { r: 244, g: 63,  b: 94 };  // rose-500-ish
-  const spectrum = mix(cool, hot, t);
-  const typeTint = hexToRgb(color);
-  const bg = rgbToCss(mix(spectrum, typeTint, 0.28));
+  // Use protocol token: Primary action green (#4A9B3F)
+  // Inverted scale per UX: more sounds => darker green, fewer => lighter green (same hue).
+  const token = hexToRgb("#4A9B3F");
+  const surface = hexToRgb("#1E2118");
+  const text = hexToRgb("#EDE8DC");
+  const light = mix(token, text, 0.38);      // lighter green for small clusters
+  const dark = mix(token, surface, 0.72);    // darker green for large clusters
+  const bg = rgbToCss(mix(light, dark, t));
 
   return L.divIcon({
     className: "",
     iconSize:   [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.90);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.55);"><span style="color:#fff;font-size:${fs}px;font-weight:900;letter-spacing:-0.5px;text-shadow:0 1px 2px rgba(0,0,0,0.55);">${count}</span></div>`,
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.90);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="color:#EDE8DC;font-size:${fs}px;font-weight:900;letter-spacing:-0.5px;">${count}</span></div>`,
   });
 }
 
