@@ -1,4 +1,9 @@
-import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -6,7 +11,7 @@ const uploadFields = v.object({
   _id: v.id("uploads"),
   _creationTime: v.number(),
   userId: v.string(),
-  storageId: v.id("_storage"),
+  storageId: v.optional(v.id("_storage")),
   title: v.string(),
   description: v.optional(v.string()),
   durationSeconds: v.optional(v.float64()),
@@ -112,7 +117,7 @@ export const like = mutation({
     const existing = await ctx.db
       .query("userLikes")
       .withIndex("by_userId_uploadId", (q) =>
-        q.eq("userId", args.userId).eq("uploadId", args.uploadId)
+        q.eq("userId", args.userId).eq("uploadId", args.uploadId),
       )
       .unique();
 
@@ -195,7 +200,7 @@ export const getByIdInternal = internalQuery({
       _id: v.id("uploads"),
       _creationTime: v.number(),
       userId: v.string(),
-      storageId: v.id("_storage"),
+      storageId: v.optional(v.id("_storage")),
       title: v.string(),
       description: v.optional(v.string()),
       durationSeconds: v.optional(v.float64()),
@@ -209,7 +214,7 @@ export const getByIdInternal = internalQuery({
       tags: v.optional(v.array(v.string())),
       elasticSynced: v.optional(v.boolean()),
     }),
-    v.null()
+    v.null(),
   ),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.uploadId);
@@ -264,7 +269,7 @@ export const deleteUpload = mutation({
       .query("userLikes")
       .withIndex("by_uploadId", (q) => q.eq("uploadId", args.uploadId))
       .collect();
-    
+
     for (const like of likes) {
       await ctx.db.delete(like._id);
     }

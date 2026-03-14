@@ -59,17 +59,15 @@ GEMINI_API_KEY=AIza...
 
 ### 4. Set up the YAMNet model
 
-The YAMNet TF.js model files (~14 MB) are committed to the repo under `public/yamnet-model/`, so a normal `git clone` is all that's needed. Verify they're present:
+The YAMNet TF.js model files (~14 MB) are committed to the repo — no download needed. They come with `git clone` automatically.
+
+If you want to double-check they're present:
 
 ```bash
 bun scripts/setup-yamnet.ts
 ```
 
-If any files are missing (e.g. after a shallow clone), fetch the full history:
-
-```bash
-git fetch --unshallow
-```
+> If files are missing after a shallow clone, run `git fetch --unshallow`.
 
 ### 5. Run the app
 
