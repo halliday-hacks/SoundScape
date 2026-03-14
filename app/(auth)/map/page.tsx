@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { MapBackButton } from "@/components/map/MapBackButton";
 
 const DESIGNS = [
   {
@@ -63,11 +64,24 @@ const DESIGNS = [
     border: "#e5e7eb",
     preview: ["☀️ Light warm mode", "🍃 Category filter toggles", "⬆️ Bottom sheet slide-up", "🌿 Leaf biodiversity meter"],
   },
+  {
+    id: 6,
+    name: "OverlayView Pixel Pins",
+    tag: "Google Maps · Canvas Overlay",
+    desc: "Google Maps + a pixel canvas overlay (OverlayView). Pins are drawn on a crisp canvas and stay pinned during pan/zoom.",
+    accent: "#4A9B3F",
+    bg: "#0D0F0A",
+    textMuted: "rgba(255,255,255,.45)",
+    textMain: "#EDE8DC",
+    border: "rgba(255,255,255,.08)",
+    preview: ["🗺️ Google Maps base", "🧩 OverlayView canvas layer", "📍 Pins drawn in pixels", "⚡ Fast redraw on pan/zoom"],
+  },
 ];
 
 export default function MapPickerPage() {
   return (
     <div style={{ minHeight: "100vh", background: "#0a0a0a", padding: "32px 24px 48px", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
+      <MapBackButton />
 
       {/* Header */}
       <div style={{ maxWidth: 960, margin: "0 auto 36px" }}>

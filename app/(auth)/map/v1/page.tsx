@@ -1,5 +1,6 @@
 "use client";
 import dynamic from "next/dynamic";
+import { MapBackButton } from "@/components/map/MapBackButton";
 
 const Map = dynamic(() => import("@/components/sound-map/SoundMapInnerV1"), {
   ssr: false,
@@ -7,5 +8,10 @@ const Map = dynamic(() => import("@/components/sound-map/SoundMapInnerV1"), {
 });
 
 export default function Page() {
-  return <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}><Map /></div>;
+  return (
+    <div style={{ width: "100vw", height: "100vh", overflow: "hidden" }}>
+      <MapBackButton />
+      <Map />
+    </div>
+  );
 }
