@@ -65,6 +65,42 @@ export const getRecent = query({
   },
 });
 
+// Get all uploads by a specific user
+export const getByUserId = query({
+  args: { userId: v.string(), limit: v.optional(v.number()) },
+  returns: v.array(uploadFields),
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 50;
+    return await ctx.db
+      .query("uploads")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .order("desc")
+      .take(limit);
+  },
+});
+
+// Get upload stats for a user (upload count + total likes received)
+export const getUserStats = query({
+  args: { userId: v.string() },
+  returns: v.object({
+    uploadCount: v.number(),
+    totalLikes: v.number(),
+    totalListens: v.number(),
+  }),
+  handler: async (ctx, args) => {
+    const uploads = await ctx.db
+      .query("uploads")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .collect();
+
+    return {
+      uploadCount: uploads.length,
+      totalLikes: uploads.reduce((sum, u) => sum + u.likeCount, 0),
+      totalListens: uploads.reduce((sum, u) => sum + u.listenCount, 0),
+    };
+  },
+});
+
 export const like = mutation({
   args: {
     uploadId: v.id("uploads"),
