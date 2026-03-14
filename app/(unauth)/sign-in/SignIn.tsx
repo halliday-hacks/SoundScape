@@ -35,6 +35,19 @@ export default function SignIn() {
   const [otpSent, setOtpSent] = useState(false);
   const [anonymousLoading, setAnonymousLoading] = useState(false);
 
+  const getErrorMessage = (ctx: { error?: unknown }) => {
+    const error = (ctx as any)?.error;
+    if (!error) return "Something went wrong. Please try again.";
+    if (typeof error === "string") return error;
+    if (typeof error === "object") {
+      const message = (error as any).message;
+      const code = (error as any).code;
+      if (typeof message === "string" && message.length > 0) return message;
+      if (typeof code === "string" && code.length > 0) return code;
+    }
+    return "Something went wrong. Please try again.";
+  };
+
   const handleSignIn = async () => {
     await authClient.signIn.email(
       {
