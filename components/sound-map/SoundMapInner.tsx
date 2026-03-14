@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
-  Map,
+  Map as MapLibre,
   MapMarker,
   MarkerContent,
   MapControls,
@@ -16,7 +16,14 @@ import type { Id } from "@/convex/_generated/dataModel";
 import RecordUploadPanelDark, {
   type UploadResult,
 } from "./RecordUploadPanelDark";
-import { useElasticMapSearch, VALID_SOUND_TYPES, formatAgo, formatDuration } from "@/hooks/use-elastic-search";
+import { useElasticMapSearch, VALID_SOUND_TYPES, formatAgo, formatDuration, parseDuration } from "@/hooks/use-elastic-search";
+import {
+  ScrubBarContainer,
+  ScrubBarTrack,
+  ScrubBarProgress,
+  ScrubBarThumb,
+  ScrubBarTimeLabel,
+} from "@/components/ui/scrub-bar";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType =
@@ -1397,40 +1404,6 @@ const PINS: Pin[] = [
 
 // ─── Convex helpers ────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
-=======
-const VALID_SOUND_TYPES = new Set<string>([
-  "birds",
-  "traffic",
-  "music",
-  "rain",
-  "construction",
-  "insects",
-  "silence",
-]);
-
-function formatAgo(ms: number): string {
-  const diff = Date.now() - ms;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function formatDuration(secs: number): string {
-  const m = Math.floor(secs / 60);
-  const s = Math.round(secs % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function parseDuration(str: string): number {
-  const [m, s] = str.split(":").map(Number);
-  return (m || 0) * 60 + (s || 0);
-}
-
->>>>>>> d6cdaaf56575467dd1dbff5239653baa7a79f54f
 type ConvexUpload = {
   _id: string;
   _creationTime: number;
@@ -1863,7 +1836,6 @@ export default function SoundMapInner() {
   const mapRef = useRef<MapRef>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<L.Map | null>(null);
 
   // ── Load real uploads from Convex ──
   const convexUploads = useQuery(api.uploads.getRecent, { limit: 200 });
@@ -1941,7 +1913,7 @@ export default function SoundMapInner() {
     
     // Combine all sources, removing duplicates by ID
     const combined = [...PINS, ...fromConvex, ...elasticPins];
-    const uniqueMap = new Map<string, Pin>();
+    const uniqueMap = new globalThis.Map<string, Pin>();
     combined.forEach(pin => {
       if (!uniqueMap.has(pin.id.toString())) {
         uniqueMap.set(pin.id.toString(), pin);
@@ -2038,20 +2010,14 @@ export default function SoundMapInner() {
       }}
     >
       {/* MAP */}
-      <Map
+      <MapLibre
         ref={mapRef}
         center={[144.9631, -37.8136]}
         zoom={10}
         minZoom={2}
         maxZoom={18}
-<<<<<<< HEAD
-        whenReady={(map) => {
-          mapRef.current = map.target;
-        }}
-=======
         theme="dark"
         className="w-full h-full"
->>>>>>> d6cdaaf56575467dd1dbff5239653baa7a79f54f
       >
         <MapKeyframes />
         <ClusterTracker
@@ -2138,7 +2104,7 @@ export default function SoundMapInner() {
             </MapMarker>
           ),
         )}
-      </Map>
+      </MapLibre>
 
       {/* ── SEARCH BAR (only top UI element) ── */}
       <div

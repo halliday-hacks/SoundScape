@@ -60,6 +60,11 @@ export function formatDuration(secs: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+export function parseDuration(str: string): number {
+  const [m, s] = str.split(":").map(Number);
+  return (m || 0) * 60 + (s || 0);
+}
+
 // ─── Map endpoint hook ────────────────────────────────────────────────────────
 export function useElasticMapSearch(bounds: {
   north: number;

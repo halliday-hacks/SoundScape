@@ -52,7 +52,7 @@ context.md
 
 SoundSoil-context.md
 Backend-overview-v2.md
-test-elastic.ts
+test*
 
 # YAMNet model artifacts (non-TF.js formats)
 models/
