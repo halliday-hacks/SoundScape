@@ -113,3 +113,31 @@ export const incrementListenCount = mutation({
     return null;
   },
 });
+
+// ============================================
+// FILE STORAGE
+// ============================================
+
+/**
+ * Generate a short-lived upload URL for the client to upload a file directly to Convex storage.
+ * Call this first, then POST the file to the returned URL.
+ */
+export const generateUploadUrl = mutation({
+  args: {},
+  returns: v.string(),
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+/**
+ * Get a public URL for a stored file by its storageId.
+ * Returns null if the file doesn't exist.
+ */
+export const getStorageUrl = query({
+  args: { storageId: v.string() },
+  returns: v.union(v.string(), v.null()),
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
