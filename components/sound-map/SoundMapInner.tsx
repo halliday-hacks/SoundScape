@@ -1962,8 +1962,8 @@ export default function SoundMapInner() {
     >
       {/* MAP */}
       <MapContainer
-        center={[20, 120]}
-        zoom={3}
+        center={[-37.8136, 144.9631]}
+        zoom={10}
         style={{ width: "100%", height: "100%", background: "#111" }}
         zoomControl={false}
         minZoom={2}
