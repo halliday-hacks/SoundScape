@@ -277,11 +277,35 @@ function makeCluster(count: number, dominantType: SoundType): L.DivIcon {
   const { color } = CFG[dominantType];
   const size = count >= 30 ? 50 : count >= 15 ? 42 : count >= 5 ? 36 : 32;
   const fs   = count >= 30 ? 16 : count >= 15 ? 14 : 12;
+
+  // Count-based spectrum: low counts are cooler/dimmer, high counts are warmer/brighter.
+  // Keep a subtle tint towards the dominant sound type so clusters still "read" as that type.
+  const t = Math.max(0, Math.min(1, (count - 1) / 30)); // 1..31+ -> 0..1
+  const lerp = (a: number, b: number, x: number) => a + (b - a) * x;
+  const hexToRgb = (hex: string) => {
+    const h = hex.replace("#", "").trim();
+    const full = h.length === 3 ? h.split("").map((c) => c + c).join("") : h;
+    const n = Number.parseInt(full, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  };
+  const mix = (a: { r: number; g: number; b: number }, b: { r: number; g: number; b: number }, x: number) => ({
+    r: Math.round(lerp(a.r, b.r, x)),
+    g: Math.round(lerp(a.g, b.g, x)),
+    b: Math.round(lerp(a.b, b.b, x)),
+  });
+  const rgbToCss = (rgb: { r: number; g: number; b: number }) => `rgb(${rgb.r} ${rgb.g} ${rgb.b})`;
+
+  const cool = { r: 56, g: 189, b: 248 };  // sky-400-ish
+  const hot  = { r: 244, g: 63,  b: 94 };  // rose-500-ish
+  const spectrum = mix(cool, hot, t);
+  const typeTint = hexToRgb(color);
+  const bg = rgbToCss(mix(spectrum, typeTint, 0.28));
+
   return L.divIcon({
     className: "",
     iconSize:   [size, size],
     iconAnchor: [size / 2, size / 2],
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${color};border:2px solid rgba(255,255,255,0.85);display:flex;align-items:center;justify-content:center;cursor:pointer;"><span style="color:#fff;font-size:${fs}px;font-weight:800;letter-spacing:-0.5px;">${count}</span></div>`,
+    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:${bg};border:2px solid rgba(255,255,255,0.90);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 10px rgba(0,0,0,0.55);"><span style="color:#fff;font-size:${fs}px;font-weight:900;letter-spacing:-0.5px;text-shadow:0 1px 2px rgba(0,0,0,0.55);">${count}</span></div>`,
   });
 }
 
