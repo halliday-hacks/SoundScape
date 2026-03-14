@@ -6,7 +6,7 @@ const uploadFields = v.object({
   _id: v.id("uploads"),
   _creationTime: v.number(),
   userId: v.string(),
-  storageId: v.optional(v.string()),
+  storageId: v.id("_storage"),
   title: v.string(),
   description: v.optional(v.string()),
   durationSeconds: v.optional(v.float64()),
@@ -24,7 +24,7 @@ const uploadFields = v.object({
 export const create = mutation({
   args: {
     userId: v.string(),
-    storageId: v.optional(v.string()),
+    storageId: v.id("_storage"),
     title: v.string(),
     description: v.optional(v.string()),
     durationSeconds: v.optional(v.float64()),
@@ -140,7 +140,7 @@ export const generateUploadUrl = mutation({
  * Returns null if the file doesn't exist.
  */
 export const getStorageUrl = query({
-  args: { storageId: v.string() },
+  args: { storageId: v.id("_storage") },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     return await ctx.storage.getUrl(args.storageId);
@@ -159,7 +159,7 @@ export const getByIdInternal = internalQuery({
       _id: v.id("uploads"),
       _creationTime: v.number(),
       userId: v.string(),
-      storageId: v.optional(v.string()),
+      storageId: v.id("_storage"),
       title: v.string(),
       description: v.optional(v.string()),
       durationSeconds: v.optional(v.float64()),
