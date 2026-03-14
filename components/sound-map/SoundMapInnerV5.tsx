@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import RecordUploadPanel, { type UploadResult } from "./RecordUploadPanel";
 
 type SoundType = "birds" | "traffic" | "music" | "rain" | "construction" | "insects" | "silence";
 
@@ -85,10 +86,32 @@ function BioLeaves({ score }: { score: number }) {
   );
 }
 
+// A new pin added by the user in this session (not yet from backend)
+interface NewPin {
+  id: string;
+  lat: number;
+  lng: number; // alias for lon, matches Pin shape for marker rendering
+  type: SoundType;
+  label: string;
+  species: null;
+  intensity: number;
+  db: number;
+  time: string;
+  ago: string;
+  likes: number;
+  listens: number;
+  bio: number;
+  user: string;
+  duration: string;
+}
+
 export default function SoundMapInnerV5() {
   const [selected, setSelected] = useState<Pin | null>(null);
   const [activeFilters, setActiveFilters] = useState<Set<SoundType>>(new Set());
   const [playing, setPlaying] = useState(false);
+  const [showUploadPanel, setShowUploadPanel] = useState(false);
+  const [newPins, setNewPins] = useState<NewPin[]>([]);
+  const [flyTarget, setFlyTarget] = useState<[number, number] | null>(null);
 
   const toggle = (t: SoundType) => setActiveFilters(s => {
     const n = new Set(s);
@@ -96,11 +119,36 @@ export default function SoundMapInnerV5() {
     return n;
   });
 
-  const visible = activeFilters.size === 0 ? PINS : PINS.filter(p => activeFilters.has(p.type));
+  const handleUploadSuccess = (result: UploadResult) => {
+    const soundType = (CFG[result.dominantClass as SoundType] ? result.dominantClass : "birds") as SoundType;
+    const now = new Date();
+    const newPin: NewPin = {
+      id: `new-${Date.now()}`,
+      lat: result.lat,
+      lng: result.lon,
+      type: soundType,
+      label: result.title,
+      species: null,
+      intensity: 0.5,
+      db: 50,
+      time: `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`,
+      ago: "just now",
+      likes: 0,
+      listens: 0,
+      bio: 50,
+      user: "You",
+      duration: "0:00",
+    };
+    setNewPins(p => [...p, newPin]);
+    setFlyTarget([result.lat, result.lon]);
+  };
+
+  const allPins: (Pin | NewPin)[] = [...PINS, ...newPins];
+  const visible = activeFilters.size === 0 ? allPins : allPins.filter(p => activeFilters.has(p.type));
   const S = selected ? CFG[selected.type] : null;
 
   const counts = (Object.keys(CFG) as SoundType[]).reduce((acc, t) => {
-    acc[t] = PINS.filter(p => p.type === t).length;
+    acc[t] = allPins.filter(p => p.type === t).length;
     return acc;
   }, {} as Record<SoundType, number>);
 
@@ -118,10 +166,32 @@ export default function SoundMapInnerV5() {
               <div style={{ color: "#9ca3af", fontSize: 10 }}>Community Sound Map</div>
             </div>
           </div>
-          {/* Search */}
-          <div style={{ background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
-            <svg width={14} height={14} fill="none" stroke="#9ca3af" strokeWidth={2}><circle cx={6} cy={6} r={5} /><line x1={10} y1={10} x2={14} y2={14} /></svg>
-            <span style={{ color: "#d1d5db", fontSize: 13 }}>Search places, species…</span>
+          {/* Search + upload button row */}
+          <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+            <div style={{ flex: 1, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 10, padding: "8px 12px", display: "flex", alignItems: "center", gap: 8 }}>
+              <svg width={14} height={14} fill="none" stroke="#9ca3af" strokeWidth={2}><circle cx={6} cy={6} r={5} /><line x1={10} y1={10} x2={14} y2={14} /></svg>
+              <span style={{ color: "#d1d5db", fontSize: 13 }}>Search places, species…</span>
+            </div>
+            <button
+              onClick={() => setShowUploadPanel(true)}
+              title="Record or upload a sound"
+              style={{
+                flexShrink: 0,
+                width: 36,
+                height: 36,
+                background: "#dcfce7",
+                border: "1px solid #86efac",
+                borderRadius: 10,
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 16,
+                transition: "all 0.15s",
+              }}
+            >
+              🎙
+            </button>
           </div>
         </div>
 
@@ -168,11 +238,32 @@ export default function SoundMapInnerV5() {
           )}
         </div>
 
-        {/* Recordings count */}
+        {/* Recordings count + upload CTA */}
         <div style={{ padding: "10px 18px", marginTop: "auto", borderTop: "1px solid #f3f4f6" }}>
-          <div style={{ color: "#6b7280", fontSize: 11 }}>
-            Showing <strong style={{ color: "#111827" }}>{visible.length}</strong> of {PINS.length} recordings
+          <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>
+            Showing <strong style={{ color: "#111827" }}>{visible.length}</strong> of {allPins.length} recordings
           </div>
+          <button
+            onClick={() => setShowUploadPanel(true)}
+            style={{
+              width: "100%",
+              background: "#166534",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "9px",
+              fontWeight: 600,
+              fontSize: 12,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <span>🎙</span>
+            <span>Add Your Sound</span>
+          </button>
         </div>
       </div>
 
@@ -183,10 +274,11 @@ export default function SoundMapInnerV5() {
           zoomControl={true}>
           <MapStyles />
           <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="&copy; OpenStreetMap" />
+          {flyTarget && <FlyToTarget target={flyTarget} onDone={() => setFlyTarget(null)} />}
           {visible.map(pin => (
-            <Marker key={pin.id} position={[pin.lat, pin.lng]}
-              icon={makePin(pin.type, selected?.id === pin.id)}
-              eventHandlers={{ click: () => setSelected(p => p?.id === pin.id ? null : pin) }} />
+            <Marker key={String(pin.id)} position={[pin.lat, pin.lng]}
+              icon={makePin(pin.type, String(selected?.id) === String(pin.id))}
+              eventHandlers={{ click: () => setSelected(p => String(p?.id) === String(pin.id) ? null : pin as Pin) }} />
           ))}
         </MapContainer>
 
@@ -253,6 +345,27 @@ export default function SoundMapInnerV5() {
           )}
         </div>
       </div>
+
+      {/* ── UPLOAD PANEL ─────────────────────────────────────────────────────── */}
+      {showUploadPanel && (
+        <RecordUploadPanel
+          onClose={() => setShowUploadPanel(false)}
+          onSuccess={handleUploadSuccess}
+        />
+      )}
     </div>
   );
+}
+
+// ── FlyToTarget ───────────────────────────────────────────────────────────────
+// Flies the map to a new location after a successful upload
+function FlyToTarget({ target, onDone }: { target: [number, number]; onDone: () => void }) {
+  const map = useMapEvents({});
+  useEffect(() => {
+    map.flyTo(target, 15, { duration: 1.4 });
+    const t = setTimeout(onDone, 1600);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+  return null;
 }

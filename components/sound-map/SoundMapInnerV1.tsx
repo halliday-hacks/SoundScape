@@ -4,16 +4,22 @@ import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import type { Id } from "@/convex/_generated/dataModel";
+import RecordUploadPanelDark, { type UploadResult } from "./RecordUploadPanelDark";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType = "birds" | "traffic" | "music" | "rain" | "construction" | "insects" | "silence";
 
 interface Pin {
-  id: number; lat: number; lng: number; type: SoundType;
+  id: string | number; lat: number; lng: number; type: SoundType;
   label: string; species: string | null; intensity: number;
   db: number; time: string; ago: string; likes: number;
   listens: number; user: string; duration: string;
   location: string;
+  // Set for pins loaded from Convex — enables real audio playback
+  storageId?: string;
 }
 
 interface Cluster { kind: "cluster"; lat: number; lng: number; pins: Pin[]; dominantType: SoundType; }
@@ -137,6 +143,64 @@ const PINS: Pin[] = [
   { id: 75, lat:  -3.4653, lng: -62.2159, type: "birds",       location: "Amazon Rainforest, Brazil",  label: "Harpy Eagle Call",        species: "Harpia harpyja",             intensity: 0.86, db: 75, time: "06:00", ago: "10h ago",  likes: 148, listens: 436, user: "Eduardo S.",  duration: "0:18" },
   { id: 76, lat:  -3.5000, lng: -62.5000, type: "insects",     location: "Amazon Rainforest, Brazil",  label: "Amazon Night Orchestra",  species: null,                         intensity: 0.95, db: 88, time: "22:00", ago: "8h ago",   likes: 132, listens: 389, user: "Valentina P.",duration: "10:00" },
 ];
+
+// ─── Convex helpers ────────────────────────────────────────────────────────────
+
+const VALID_SOUND_TYPES = new Set<string>(["birds","traffic","music","rain","construction","insects","silence"]);
+
+function formatAgo(ms: number): string {
+  const diff = Date.now() - ms;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
+}
+
+function formatDuration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = Math.round(secs % 60);
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+type ConvexUpload = {
+  _id: string;
+  _creationTime: number;
+  userId: string;
+  storageId: string;
+  title: string;
+  lat?: number;
+  lon?: number;
+  locationLabel?: string;
+  dominantClass?: string;
+  likeCount: number;
+  listenCount: number;
+  durationSeconds?: number;
+};
+
+function mapConvexUpload(u: ConvexUpload, idx: number): Pin {
+  const type = (u.dominantClass && VALID_SOUND_TYPES.has(u.dominantClass) ? u.dominantClass : "silence") as SoundType;
+  const d = new Date(u._creationTime);
+  return {
+    id: `cx-${idx}-${u._id}`,
+    lat: u.lat ?? 0,
+    lng: u.lon ?? 0,
+    type,
+    label: u.title,
+    species: null,
+    intensity: 0.5,
+    db: 50,
+    time: d.toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }),
+    ago: formatAgo(u._creationTime),
+    likes: u.likeCount,
+    listens: u.listenCount,
+    user: "Community",
+    duration: u.durationSeconds ? formatDuration(u.durationSeconds) : "?:??",
+    location: u.locationLabel ?? "Unknown location",
+    storageId: u.storageId,
+  };
+}
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 function searchPins(pins: Pin[], query: string): Pin[] {
@@ -323,13 +387,25 @@ export default function SoundMapInnerV1() {
   const [zoom, setZoom]                       = useState(3);
   const [searchQuery, setSearchQuery]         = useState("");
   const [dropdownOpen, setDropdownOpen]       = useState(false);
+  const [showUpload, setShowUpload]           = useState(false);
 
   const inputRef    = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ── Load real uploads from Convex ──
+  const convexUploads = useQuery(api.uploads.getRecent, { limit: 200 });
+
+  // Merge: static world PINS + real uploads from DB (skip those without coords)
+  const allPins = useMemo<Pin[]>(() => {
+    const fromConvex = (convexUploads ?? [])
+      .filter(u => u.lat !== undefined && u.lon !== undefined)
+      .map((u, i) => mapConvexUpload(u as ConvexUpload, i));
+    return [...PINS, ...fromConvex];
+  }, [convexUploads]);
+
   const FILTER_TYPES: ("all" | SoundType)[] = ["all", "birds", "insects", "rain", "music", "traffic", "construction", "silence"];
 
-  const categoryPins = useMemo(() => filter === "all" ? PINS : PINS.filter(p => p.type === filter), [filter]);
+  const categoryPins = useMemo(() => filter === "all" ? allPins : allPins.filter(p => p.type === filter), [filter, allPins]);
   const visiblePins  = useMemo(() => searchPins(categoryPins, searchQuery), [categoryPins, searchQuery]);
 
   const S = selected ? CFG[selected.type] : null;
@@ -338,6 +414,12 @@ export default function SoundMapInnerV1() {
   const handleItems = useCallback((items: MapItem[]) => setMapItems(items), []);
   const handleZoom  = useCallback((z: number) => setZoom(z), []);
   const closePanel  = () => { setSelected(null); setSelectedCluster(null); };
+
+  // Called after a successful upload — Convex query auto-refreshes so the pin
+  // will appear once the query refetches (or immediately if optimistic)
+  const handleUploadSuccess = useCallback((_result: UploadResult) => {
+    setShowUpload(false);
+  }, []);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -373,7 +455,10 @@ export default function SoundMapInnerV1() {
       </MapContainer>
 
       {/* ── SEARCH BAR (only top UI element) ── */}
-      <div ref={dropdownRef} style={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1000, width: 400 }}>
+      <div style={{ position: "absolute", top: 20, left: "50%", transform: "translateX(-50%)", zIndex: 1000, display: "flex", gap: 8, alignItems: "flex-start" }}>
+
+        {/* Search + dropdown wrapper */}
+        <div ref={dropdownRef} style={{ width: 400 }}>
 
         {/* Input row */}
         <div style={{
@@ -428,7 +513,7 @@ export default function SoundMapInnerV1() {
               {FILTER_TYPES.map(f => {
                 const active = f === filter;
                 const col    = f === "all" ? "#e2e8f0" : CFG[f].color;
-                const count  = f === "all" ? PINS.length : PINS.filter(p => p.type === f).length;
+                const count  = f === "all" ? allPins.length : allPins.filter(p => p.type === f).length;
                 return (
                   <button key={f}
                     onMouseDown={e => e.preventDefault()}
@@ -451,6 +536,25 @@ export default function SoundMapInnerV1() {
             </div>
           </div>
         )}
+        </div>{/* end search+dropdown wrapper */}
+
+        {/* Upload button */}
+        <button
+          onClick={() => setShowUpload(true)}
+          title="Record or upload a sound"
+          style={{
+            flexShrink: 0,
+            width: 44, height: 44,
+            background: "rgba(12,12,12,.92)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(34,197,94,.4)",
+            borderRadius: 14,
+            cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 20,
+            transition: "all .15s",
+          }}
+        >🎙</button>
       </div>
 
       {/* ── ZOOM BUTTONS ── */}
@@ -499,16 +603,23 @@ export default function SoundMapInnerV1() {
               </div>
             </div>
 
-            {/* Waveform player */}
+            {/* Waveform / audio player */}
             <div style={{ margin: "16px 20px 0", padding: "14px 16px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12 }}>
-              <Waveform color={S.color} />
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-                <button onClick={() => setPlaying(p => !p)} style={{ width: 36, height: 36, background: S.color, border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
-                  {playing ? "⏸" : "▶"}
-                </button>
-                <div style={{ flex: 1, margin: "0 12px", height: 2, background: "rgba(255,255,255,.08)", borderRadius: 2 }} />
-                <span style={{ color: "rgba(255,255,255,.3)", fontSize: 11 }}>0:00 / {selected.duration}</span>
-              </div>
+              {selected.storageId
+                ? <AudioPlayerConvex storageId={selected.storageId as Id<"_storage">} color={S.color} duration={selected.duration} />
+                : (
+                  <>
+                    <Waveform color={S.color} />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+                      <button onClick={() => setPlaying(p => !p)} style={{ width: 36, height: 36, background: S.color, border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700 }}>
+                        {playing ? "⏸" : "▶"}
+                      </button>
+                      <div style={{ flex: 1, margin: "0 12px", height: 2, background: "rgba(255,255,255,.08)", borderRadius: 2 }} />
+                      <span style={{ color: "rgba(255,255,255,.3)", fontSize: 11 }}>0:00 / {selected.duration}</span>
+                    </div>
+                  </>
+                )
+              }
             </div>
 
             {/* Metadata grid */}
@@ -545,6 +656,34 @@ export default function SoundMapInnerV1() {
         @keyframes wv2 { from{transform:scaleY(.4)}  to{transform:scaleY(1.1)} }
         input::placeholder { color:rgba(255,255,255,.22); }
       `}</style>
+
+      {/* ── UPLOAD PANEL ── */}
+      {showUpload && (
+        <RecordUploadPanelDark
+          onClose={() => setShowUpload(false)}
+          onSuccess={handleUploadSuccess}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─── AudioPlayerConvex ────────────────────────────────────────────────────────
+// Fetches the real audio URL from Convex storage and renders a native player.
+function AudioPlayerConvex({ storageId, color, duration }: { storageId: Id<"_storage">; color: string; duration: string }) {
+  const url = useQuery(api.uploads.getStorageUrl, { storageId });
+  return (
+    <div>
+      <Waveform color={color} />
+      <div style={{ marginTop: 10 }}>
+        {url
+          ? <audio src={url} controls style={{ width: "100%", height: 34 }} />
+          : <div style={{ color: "rgba(255,255,255,.3)", fontSize: 11, textAlign: "center", padding: "8px 0" }}>Loading audio…</div>
+        }
+        <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 4 }}>
+          <span style={{ color: "rgba(255,255,255,.3)", fontSize: 11 }}>{duration}</span>
+        </div>
+      </div>
     </div>
   );
 }

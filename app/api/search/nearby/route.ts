@@ -91,22 +91,22 @@ export async function GET(req: NextRequest) {
       total: data.hits?.total?.value ?? hits.length,
       center: { lat, lon },
       radius,
-      uploads: hits.map((hit: ElasticHit) => ({
-        id: hit._source.upload_id,
-        userId: hit._source.user_id,
+      hits: hits.map((hit: ElasticHit) => ({
+        upload_id: hit._source.upload_id,
+        user_id: hit._source.user_id,
         title: hit._source.title,
         description: hit._source.description,
         geo: hit._source.geo,
-        locationName: hit._source.location_name,
-        dominantClass: hit._source.dominant_class,
+        location_name: hit._source.location_name,
+        dominant_class: hit._source.dominant_class,
         tags: hit._source.tags,
         likes: hit._source.likes,
-        listenCount: hit._source.listen_count,
-        biodiversityScore: hit._source.biodiversity_score,
-        durationSeconds: hit._source.duration_seconds,
+        listen_count: hit._source.listen_count,
+        biodiversity_score: hit._source.biodiversity_score,
+        duration_seconds: hit._source.duration_seconds,
         timestamp: hit._source.timestamp,
         // Distance from center (Elastic returns this in sort values)
-        distanceKm: hit.sort?.[0] ?? null,
+        distance_km: hit.sort?.[0] ?? null,
       })),
     });
   } catch (err) {

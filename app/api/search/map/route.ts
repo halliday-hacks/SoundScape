@@ -9,14 +9,14 @@ const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
  * Returns uploads within a map viewport bounding box.
  *
  * Query params:
- *   - north (required): top latitude
- *   - south (required): bottom latitude
- *   - east (required): right longitude
- *   - west (required): left longitude
+ *   - top_left_lat (required): top-left latitude
+ *   - top_left_lon (required): top-left longitude
+ *   - bottom_right_lat (required): bottom-right latitude
+ *   - bottom_right_lon (required): bottom-right longitude
  *   - limit (optional): max results, default 100
  *
  * Example:
- *   /api/search/map?north=-37.7&south=-37.9&east=145.1&west=144.9
+ *   /api/search/map?top_left_lat=-37.7&top_left_lon=144.9&bottom_right_lat=-37.9&bottom_right_lon=145.1
  */
 export async function GET(req: NextRequest) {
   if (!ELASTIC_URL || !ELASTIC_API_KEY) {
@@ -27,16 +27,16 @@ export async function GET(req: NextRequest) {
   }
 
   const params = req.nextUrl.searchParams;
-  const north = parseFloat(params.get("north") ?? "");
-  const south = parseFloat(params.get("south") ?? "");
-  const east = parseFloat(params.get("east") ?? "");
-  const west = parseFloat(params.get("west") ?? "");
+  const north = parseFloat(params.get("top_left_lat") ?? "");
+  const west  = parseFloat(params.get("top_left_lon") ?? "");
+  const south = parseFloat(params.get("bottom_right_lat") ?? "");
+  const east  = parseFloat(params.get("bottom_right_lon") ?? "");
   const limit = Math.min(parseInt(params.get("limit") ?? "100", 10) || 100, 500);
 
   // Validate required params
   if ([north, south, east, west].some(isNaN)) {
     return NextResponse.json(
-      { error: "Missing or invalid bounds. Required: north, south, east, west" },
+      { error: "Missing or invalid bounds. Required: top_left_lat, top_left_lon, bottom_right_lat, bottom_right_lon" },
       { status: 400 }
     );
   }
@@ -85,19 +85,19 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       total: data.hits?.total?.value ?? hits.length,
-      uploads: hits.map((hit: ElasticHit) => ({
-        id: hit._source.upload_id,
-        userId: hit._source.user_id,
+      hits: hits.map((hit: ElasticHit) => ({
+        upload_id: hit._source.upload_id,
+        user_id: hit._source.user_id,
         title: hit._source.title,
         description: hit._source.description,
         geo: hit._source.geo,
-        locationName: hit._source.location_name,
-        dominantClass: hit._source.dominant_class,
+        location_name: hit._source.location_name,
+        dominant_class: hit._source.dominant_class,
         tags: hit._source.tags,
         likes: hit._source.likes,
-        listenCount: hit._source.listen_count,
-        biodiversityScore: hit._source.biodiversity_score,
-        durationSeconds: hit._source.duration_seconds,
+        listen_count: hit._source.listen_count,
+        biodiversity_score: hit._source.biodiversity_score,
+        duration_seconds: hit._source.duration_seconds,
         timestamp: hit._source.timestamp,
       })),
     });
