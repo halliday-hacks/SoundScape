@@ -10,6 +10,7 @@ import type { Id } from "@/convex/_generated/dataModel";
 import RecordUploadPanelDark, {
   type UploadResult,
 } from "./RecordUploadPanelDark";
+import { useElasticMapSearch, VALID_SOUND_TYPES, formatAgo, formatDuration } from "@/hooks/use-elastic-search";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType =
@@ -1390,32 +1391,6 @@ const PINS: Pin[] = [
 
 // ─── Convex helpers ────────────────────────────────────────────────────────────
 
-const VALID_SOUND_TYPES = new Set<string>([
-  "birds",
-  "traffic",
-  "music",
-  "rain",
-  "construction",
-  "insects",
-  "silence",
-]);
-
-function formatAgo(ms: number): string {
-  const diff = Date.now() - ms;
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
-}
-
-function formatDuration(secs: number): string {
-  const m = Math.floor(secs / 60);
-  const s = Math.round(secs % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
 type ConvexUpload = {
   _id: string;
   _creationTime: number;
@@ -1880,20 +1855,102 @@ export default function SoundMapInner() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
+  const [mapBounds, setMapBounds] = useState<{
+    north: number;
+    south: number;
+    east: number;
+    west: number;
+  } | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   // ── Load real uploads from Convex ──
   const convexUploads = useQuery(api.uploads.getRecent, { limit: 200 });
 
-  // Merge: static world PINS + real uploads from DB (skip those without coords)
+  // ── Elastic search with auto-refresh ──
+  const {
+    data: elasticData,
+    isLoading: isRefreshing,
+    lastRefresh,
+    forceRefresh,
+  } = useElasticMapSearch(mapBounds, {
+    autoRefresh: true,
+    refreshInterval: 30_000,
+    limit: 200,
+  });
+
+  // Convert Elastic hits to Pin format
+  const elasticPins = useMemo<Pin[]>(() => {
+    const hits = elasticData?.hits ?? [];
+    return hits.map((hit: any, idx: number) => ({
+      id: `elastic-${idx}-${hit.upload_id}`,
+      lat: hit.geo?.lat ?? 0,
+      lng: hit.geo?.lon ?? 0,
+      type: (hit.dominant_class && VALID_SOUND_TYPES.has(hit.dominant_class)
+        ? hit.dominant_class
+        : "silence") as SoundType,
+      label: hit.title,
+      species: null,
+      intensity: 0.5,
+      db: 50,
+      time: new Date(hit.timestamp).toLocaleTimeString("en", { hour: "2-digit", minute: "2-digit" }),
+      ago: formatAgo(hit.timestamp),
+      likes: hit.likes,
+      listens: hit.listen_count,
+      user: "Community",
+      duration: hit.duration_seconds ? formatDuration(hit.duration_seconds) : "?:??",
+      location: hit.location_name ?? "Unknown location",
+    }));
+  }, [elasticData]);
+
+  // Update map bounds when map moves
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    const updateBounds = () => {
+      const bounds = mapRef.current!.getBounds();
+      setMapBounds({
+        north: bounds.getNorth(),
+        south: bounds.getSouth(),
+        east: bounds.getEast(),
+        west: bounds.getWest(),
+      });
+    };
+    
+    // Initial bounds
+    updateBounds();
+    
+    // Listen for map movements
+    mapRef.current.on("moveend", updateBounds);
+    mapRef.current.on("zoomend", updateBounds);
+    
+    return () => {
+      if (mapRef.current) {
+        mapRef.current.off("moveend", updateBounds);
+        mapRef.current.off("zoomend", updateBounds);
+      }
+    };
+  }, []);
+
+  // Merge: static world PINS + real uploads from DB + Elastic results (skip those without coords)
   const allPins = useMemo<Pin[]>(() => {
     const fromConvex = (convexUploads ?? [])
       .filter((u) => u.lat !== undefined && u.lon !== undefined)
       .map((u, i) => mapConvexUpload(u as ConvexUpload, i));
-    return [...PINS, ...fromConvex];
-  }, [convexUploads]);
+    
+    // Combine all sources, removing duplicates by ID
+    const combined = [...PINS, ...fromConvex, ...elasticPins];
+    const uniqueMap = new Map<string, Pin>();
+    combined.forEach(pin => {
+      if (!uniqueMap.has(pin.id.toString())) {
+        uniqueMap.set(pin.id.toString(), pin);
+      }
+    });
+    
+    return Array.from(uniqueMap.values());
+  }, [convexUploads, elasticPins]);
 
   const FILTER_TYPES: ("all" | SoundType)[] = [
     "all",
@@ -1968,6 +2025,9 @@ export default function SoundMapInner() {
         zoomControl={false}
         minZoom={2}
         maxZoom={18}
+        whenReady={(map) => {
+          mapRef.current = map.target;
+        }}
       >
         <MapStyles />
         <TileLayer
@@ -2230,6 +2290,34 @@ export default function SoundMapInner() {
         </div>
         {/* end search+dropdown wrapper */}
 
+        {/* Refresh button */}
+        <button
+          onClick={forceRefresh}
+          disabled={isRefreshing}
+          title="Refresh from Elastic"
+          style={{
+            flexShrink: 0,
+            width: 44,
+            height: 44,
+            background: "rgba(12,12,12,.92)",
+            backdropFilter: "blur(24px)",
+            border: "1px solid rgba(255,255,255,.15)",
+            borderRadius: 14,
+            cursor: isRefreshing ? "wait" : "pointer",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 18,
+            transition: "all .15s",
+            opacity: isRefreshing ? 0.6 : 1,
+          }}
+        >
+          <span style={{
+            display: "inline-block",
+            animation: isRefreshing ? "spin 1s linear infinite" : "none",
+          }}>↻</span>
+        </button>
+
         {/* Upload button */}
         <button
           onClick={() => setShowUpload(true)}
@@ -2289,6 +2377,41 @@ export default function SoundMapInner() {
           </div>
         ))}
       </div>
+
+      {/* ── REFRESH INDICATOR ── */}
+      {lastRefresh && (
+        <div
+          style={{
+            position: "absolute",
+            left: 20,
+            bottom: 24,
+            zIndex: 1000,
+            background: "rgba(12,12,12,.85)",
+            backdropFilter: "blur(16px)",
+            border: "1px solid rgba(255,255,255,.1)",
+            borderRadius: 8,
+            padding: "6px 10px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          <span style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: isRefreshing ? "#fbbf24" : "#22c55e",
+            animation: isRefreshing ? "pulse 1s ease-in-out infinite" : "none",
+          }} />
+          <span style={{
+            color: "rgba(255,255,255,.5)",
+            fontSize: 10,
+            fontFamily: "monospace",
+          }}>
+            {isRefreshing ? "Refreshing..." : `Updated ${lastRefresh.toLocaleTimeString()}`}
+          </span>
+        </div>
+      )}
 
       {/* ── SIDE PANEL ── */}
       <div
@@ -2569,6 +2692,8 @@ export default function SoundMapInner() {
         @keyframes wv0 { from{transform:scaleY(.3)}  to{transform:scaleY(1)}   }
         @keyframes wv1 { from{transform:scaleY(.5)}  to{transform:scaleY(.88)} }
         @keyframes wv2 { from{transform:scaleY(.4)}  to{transform:scaleY(1.1)} }
+        @keyframes spin { from{transform:rotate(0deg)}  to{transform:rotate(360deg)} }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
         input::placeholder { color:rgba(255,255,255,.22); }
       `}</style>
 
