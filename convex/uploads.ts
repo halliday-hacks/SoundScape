@@ -141,3 +141,36 @@ export const getStorageUrl = query({
     return await ctx.storage.getUrl(args.storageId);
   },
 });
+
+/**
+ * Delete an upload and its associated audio file from storage.
+ * Also removes any userLikes for this upload.
+ */
+export const deleteUpload = mutation({
+  args: { uploadId: v.id("uploads") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const upload = await ctx.db.get(args.uploadId);
+    if (!upload) return null;
+
+    // Delete the audio file from storage (if it exists)
+    if (upload.storageId) {
+      await ctx.storage.delete(upload.storageId);
+    }
+
+    // Delete all likes for this upload
+    const likes = await ctx.db
+      .query("userLikes")
+      .withIndex("by_uploadId", (q) => q.eq("uploadId", args.uploadId))
+      .collect();
+    
+    for (const like of likes) {
+      await ctx.db.delete(like._id);
+    }
+
+    // Delete the upload record
+    await ctx.db.delete(args.uploadId);
+
+    return null;
+  },
+});
