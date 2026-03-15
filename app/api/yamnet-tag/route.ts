@@ -130,7 +130,9 @@ Respond in exactly this JSON format, nothing else:
       let text = response.text?.trim() ?? "";
       // Strip markdown code fences if present
       text = text.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "").trim();
-      const parsed = JSON.parse(text);
+      const jsonCandidate = (text.match(/\{[\s\S]*\}/)?.[0] ?? text)
+        .replace(/,\s*([}\]])/g, "$1");
+      const parsed = JSON.parse(jsonCandidate);
       suggestedTitle = parsed.title ?? "";
       suggestedDescription = parsed.description ?? "";
     } catch (err) {
