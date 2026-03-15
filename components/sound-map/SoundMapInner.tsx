@@ -23,6 +23,7 @@ import {
   ScrubBarThumb,
   ScrubBarTimeLabel,
 } from "@/components/ui/scrub-bar";
+import { Mic } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType =
@@ -178,11 +179,13 @@ function searchPins(pins: Pin[], query: string): Pin[] {
 // Without it, falls back to the decorative CSS animation.
 function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] }) {
   const staticBars = [
-    18, 42, 28, 58, 34, 66, 48, 30, 72, 44, 24, 60, 38, 52, 22, 64, 32, 50, 26, 62,
+    18, 32, 52, 24, 44, 68, 36, 56, 28, 64, 40, 72, 20, 48, 60, 30, 50, 38, 66, 26,
+    54, 42, 70, 22, 46, 58, 34, 62, 16, 44, 74, 28, 52, 36, 60, 24, 48, 40, 68, 30,
+    56, 20, 64, 38, 54, 26, 46, 72,
   ];
   const isLive = amplitudes != null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3, height: 40 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 40, width: "100%" }}>
       {staticBars.map((h, i) => {
         const amp = amplitudes?.[i] ?? 0;
         const liveH = isLive ? Math.max(5, amp * 100) : h;
@@ -190,7 +193,8 @@ function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] 
           <div
             key={i}
             style={{
-              width: 3,
+              flex: 1,
+              minWidth: 0,
               background: color,
               borderRadius: 3,
               height: `${liveH}%`,
@@ -925,11 +929,10 @@ export default function SoundMapInner() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 20,
             transition: "all .15s",
           }}
         >
-          🎙
+          <Mic size={20} />
         </button>
       </div>
 
@@ -1053,7 +1056,7 @@ export default function SoundMapInner() {
               {selected.storageId ? (
                 <AudioPlayerConvex
                   storageId={selected.storageId as Id<"_storage">}
-                  color={S.color}
+                  color="#60a5fa"
                   duration={selected.duration}
                   onFirstPlay={selected.uploadId ? () => {
                     incrementListenMutation({ uploadId: selected.uploadId! as Id<"uploads"> });
@@ -1061,11 +1064,11 @@ export default function SoundMapInner() {
                 />
               ) : (
                 <>
-                  <Waveform color={S.color} />
+                  <Waveform color="#60a5fa" />
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                     <button
                       onClick={() => setPlaying((p) => !p)}
-                      style={{ width: 36, height: 36, background: S.color, border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}
+                      style={{ width: 36, height: 36, background: "#60a5fa", border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}
                     >
                       {playing ? "⏸" : "▶"}
                     </button>
@@ -1073,7 +1076,7 @@ export default function SoundMapInner() {
                       duration={parseDuration(selected.duration)}
                       value={0}
                       className="flex-1 gap-2"
-                      style={{ "--soundmap-pin-color": S.color } as React.CSSProperties}
+                      style={{ "--soundmap-pin-color": "#60a5fa" } as React.CSSProperties}
                     >
                       <ScrubBarTimeLabel time={0} className="text-[10px] w-7 shrink-0" style={{ color: "rgba(255,255,255,.45)" }} />
                       <ScrubBarTrack className="h-1.5 bg-white/[0.08]">
@@ -1266,7 +1269,7 @@ function AudioPlayerConvex({
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
-  const BARS = 20;
+  const BARS = 48;
   const [barAmplitudes, setBarAmplitudes] = useState<number[]>(() => Array(BARS).fill(0));
 
   useEffect(() => {
@@ -1318,7 +1321,7 @@ function AudioPlayerConvex({
     try {
       const ctx = new AudioContext();
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 64; // 32 frequency bins
+      analyser.fftSize = 128; // 64 frequency bins — enough to drive 48 bars
       const source = ctx.createMediaElementSource(playerRef.current);
       source.connect(analyser);
       analyser.connect(ctx.destination);

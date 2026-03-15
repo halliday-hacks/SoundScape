@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { authClient } from "@/lib/auth-client";
+import { Mic, FolderOpen } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -415,7 +416,7 @@ export default function RecordUploadPanel({ onClose, onSuccess }: Props) {
                 transition: "all 0.15s",
               }}
             >
-              <span>{m === "record" ? "🎙" : "📁"}</span>
+              <span>{m === "record" ? <Mic size={16} /> : <FolderOpen size={16} />}</span>
               <span>{m === "record" ? "Record Live" : "Upload File"}</span>
             </button>
           ))}
@@ -487,7 +488,7 @@ export default function RecordUploadPanel({ onClose, onSuccess }: Props) {
                     </button>
                   </div>
 
-                  <div style={{ fontSize: 56, marginBottom: 12 }}>🎙</div>
+                  <div style={{ marginBottom: 12, display: "flex", justifyContent: "center" }}><Mic size={56} color="#22c55e" /></div>
                   <div style={{ color: "#374151", fontWeight: 600, fontSize: 15, marginBottom: 6 }}>
                     Ready to record
                   </div>
@@ -608,7 +609,7 @@ export default function RecordUploadPanel({ onClose, onSuccess }: Props) {
                     }}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                      <span style={{ fontSize: 18 }}>🎙</span>
+                      <Mic size={18} color="#166534" />
                       <div>
                         <div style={{ fontSize: 12, fontWeight: 600, color: "#166534" }}>Recording preview</div>
                         <div style={{ fontSize: 11, color: "#6b7280" }}>{fmt(recordingTime)} recorded</div>
