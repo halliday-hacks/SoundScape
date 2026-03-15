@@ -57,55 +57,55 @@ interface Palette {
 }
 
 const P_LUSH: Palette = {
-  skyTop: '#0C1B33',
-  skyBottom: '#1A3A5C',
-  grass: '#0F3D3D',
-  grassDark: '#082626',
-  dirt: '#0F0F1E',
-  stone: '#1C2535',
-  leafA: '#0E5252',
-  leafB: '#073838',
-  leafC: '#1A6666',
-  trunk: '#1A0F2E',
+  skyTop: '#3A7EC8',    // bright mid-day blue
+  skyBottom: '#8EC8F0', // soft horizon blue
+  grass: '#6B7C3A',     // muted olive — not #4CAF50, more natural
+  grassDark: '#4E5C28', // deeper olive
+  dirt: '#9B7B52',      // warm sandy brown
+  stone: '#8A9BAA',     // cool stone
+  leafA: '#4A6B2A',     // deep olive foliage
+  leafB: '#3A5520',     // darker olive
+  leafC: '#5C7A35',     // olive highlight
+  trunk: '#6B4423',     // warm brown trunk
 };
 
 const P_MODERATE: Palette = {
-  skyTop: '#111827',
-  skyBottom: '#1F2E44',
-  grass: '#1A2F38',
-  grassDark: '#0F1E24',
-  dirt: '#171520',
-  stone: '#232B3A',
-  leafA: '#1A3A3A',
-  leafB: '#0F2424',
-  leafC: '#253A3A',
-  trunk: '#1A0F2E',
+  skyTop: '#5B8FC0',    // slightly hazier blue
+  skyBottom: '#A0C8E0', // pale hazy horizon
+  grass: '#7A8A4A',     // dusty sage
+  grassDark: '#5A6835', // deeper sage
+  dirt: '#8B7050',      // warm earth
+  stone: '#8A9CAA',     // grey stone
+  leafA: '#5A6A35',     // muted sage leaf
+  leafB: '#455228',     // dark sage
+  leafC: '#6A7A40',     // sage highlight
+  trunk: '#6B4423',     // brown trunk
 };
 
 const P_DEGRADED: Palette = {
-  skyTop: '#1A1525',
-  skyBottom: '#2A1F35',
-  grass: '#2A1E2A',
-  grassDark: '#1A1020',
-  dirt: '#1F1520',
-  stone: '#2A2535',
-  leafA: '#2A1F2A',
-  leafB: '#1A1020',
-  leafC: '#352030',
-  trunk: '#1A1020',
+  skyTop: '#8A9BAA',    // overcast grey sky
+  skyBottom: '#B8C8D0', // pale grey horizon
+  grass: '#8A7A5A',     // dry straw/dust
+  grassDark: '#6A5C40', // darker dust
+  dirt: '#8B6B48',      // dry cracked earth
+  stone: '#7A8A90',     // worn stone
+  leafA: '#7A7040',     // dying olive leaf
+  leafB: '#5C5530',     // dry leaf
+  leafC: '#8A7A48',     // dust highlight
+  trunk: '#5C4030',     // dry trunk
 };
 
 const P_DEAD: Palette = {
-  skyTop: '#0F0F18',
-  skyBottom: '#181525',
-  grass: '#1A1520',
-  grassDark: '#100F15',
-  dirt: '#140F14',
-  stone: '#1F1A25',
-  leafA: '#181520',
-  leafB: '#100F15',
-  leafC: '#1F1825',
-  trunk: '#100F15',
+  skyTop: '#6A7A84',    // ashen overcast sky
+  skyBottom: '#9AAAB4', // pale ashen horizon
+  grass: '#6A6050',     // ash/dust ground
+  grassDark: '#504840', // dark ash
+  dirt: '#604C3C',      // dark dry earth
+  stone: '#686878',     // dark stone
+  leafA: '#6A6050',     // dead leaf
+  leafB: '#504840',     // dead dark leaf
+  leafC: '#706858',     // dead highlight
+  trunk: '#484038',     // dead trunk
 };
 
 function lerpPalette(a: Palette, b: Palette, t: number): Palette {
@@ -172,10 +172,10 @@ const CW = GW * T;   // 800
 const CH = GH * T;   // 400
 
 const LEAF_SETS = [
-  ['#0E5252', '#073838', '#1A6666'],
-  ['#0A4040', '#052828', '#155555'],
-  ['#114F4F', '#083030', '#1D6060'],
-  ['#0C4A4A', '#062E2E', '#185858'],
+  ['#4A6B2A', '#3A5520', '#5C7A35'],
+  ['#506030', '#3C4A22', '#617240'],
+  ['#456028', '#34481E', '#587035'],
+  ['#4E6832', '#3A5025', '#607840'],
 ] as const;
 
 const FLOWER_COLORS  = ['#e83535', '#f5c518', '#8b35e8', '#ff69b4', '#FF6B6B', '#FFD700'];

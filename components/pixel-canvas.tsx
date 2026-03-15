@@ -130,9 +130,29 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Demo controls                                                       */}
+      {/* Classification bars + demo controls                                */}
       {/* ------------------------------------------------------------------ */}
       <div className="px-3 sm:px-0 mt-3 space-y-3">
+        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-7">
+          {CAT_CONFIG.map(({ key, label, color, emoji }) => (
+            <div key={key} className="space-y-1">
+              <div className="flex items-center gap-1">
+                <span className="text-[10px]">{emoji}</span>
+                <span className="truncate text-[10px] text-[#5C6A82]">{label}</span>
+              </div>
+              <div className="h-1 overflow-hidden rounded-full bg-[rgba(147,197,253,0.08)]">
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${active[key] * 100}%`, backgroundColor: color }}
+                />
+              </div>
+              <div className="font-mono text-[10px] text-[#5C6A82]">
+                {Math.round(active[key] * 100)}%
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Demo sliders (hidden when real classification is provided) */}
         {isDemoMode && (
           <div className="rounded-lg border border-[rgba(147,197,253,0.09)] bg-[#0B0E18] p-4">
