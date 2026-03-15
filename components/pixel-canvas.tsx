@@ -119,29 +119,43 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
         </div>
 
 
-        {/* Bottom-left: demo label */}
-        {isDemoMode && (
-          <div
-            className="absolute bottom-2 left-2 rounded-sm px-2 py-1 text-[#93C5FD] border border-[rgba(147,197,253,0.25)] bg-[rgba(147,197,253,0.08)]"
-            style={{ fontFamily: "var(--font-pixel)", fontSize: "7px" }}
-          >
-            DEMO
-          </div>
-        )}
-
-        {/* Bottom-right: Sound Map button with rainbow gradient border */}
+        {/* Bottom-right: Sound Map button — animated rainbow gradient */}
+        <style>{`
+          @keyframes rainbow-spin {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+          }
+          @keyframes soundmap-pulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(147,197,253,0); }
+            50%       { transform: scale(1.04); box-shadow: 0 0 16px 4px rgba(147,197,253,0.18); }
+          }
+          .soundmap-btn::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc, #f87171);
+            background-size: 300% 300%;
+            animation: rainbow-spin 3s ease infinite;
+            z-index: -1;
+          }
+          .soundmap-btn {
+            animation: soundmap-pulse 2.4s ease-in-out infinite;
+          }
+        `}</style>
         <Link
           href="/map"
-          className="absolute bottom-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-md text-white font-medium transition-opacity hover:opacity-90"
+          className="soundmap-btn absolute bottom-3 right-3 flex items-center gap-2 px-4 py-2 rounded-lg text-white font-semibold transition-opacity hover:opacity-90"
           style={{
-            fontSize: "11px",
-            background: "linear-gradient(#07090E, #07090E) padding-box, linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc) border-box",
-            border: "1px solid transparent",
-            backdropFilter: "blur(4px)",
-            backgroundColor: "rgba(7,9,14,0.75)",
+            fontSize: "13px",
+            background: "rgba(7,9,14,0.82)",
+            backdropFilter: "blur(6px)",
+            position: "absolute",
+            zIndex: 10,
           }}
         >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" /><path d="M9 3v15" /><path d="M15 6v15" />
           </svg>
           Sound Map
