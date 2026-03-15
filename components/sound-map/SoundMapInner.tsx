@@ -54,10 +54,6 @@ interface Pin {
   location: string;
   // Set for pins loaded from Convex — enables real audio playback
   storageId?: string;
-  // Raw Convex document ID — enables like / listen / delete mutations
-  uploadId?: string;
-  // Uploader's auth userId — used to check ownership
-  userId?: string;
 }
 
 interface Cluster {
@@ -1422,6 +1418,10 @@ type ConvexUpload = {
   likeCount: number;
   listenCount: number;
   durationSeconds?: number;
+  gifStorageId?: string;
+  videoStorageId?: string;
+  gifStatus?: string;
+  videoStatus?: string;
 };
 
 function mapConvexUpload(u: ConvexUpload, idx: number): Pin {
@@ -1448,8 +1448,6 @@ function mapConvexUpload(u: ConvexUpload, idx: number): Pin {
     duration: u.durationSeconds ? formatDuration(u.durationSeconds) : "?:??",
     location: u.locationLabel ?? "Unknown location",
     storageId: u.storageId,
-    uploadId: u._id,
-    userId: u.userId,
   };
 }
 
@@ -2687,11 +2685,30 @@ export default function SoundMapInner() {
         {/* Single pin panel */}
         {selected && S && (
           <>
-            {/* ── Header ── */}
-            <div style={{ padding: "22px 20px 18px", borderBottom: "1px solid rgba(255,255,255,.07)" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <h2 style={{ color: "#f8fafc", fontSize: 19, fontWeight: 700, margin: "0 0 3px", letterSpacing: -0.3 }}>
+            <div
+              style={{
+                padding: "22px 20px 18px",
+                borderBottom: "1px solid rgba(255,255,255,.07)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  marginBottom: 12,
+                }}
+              >
+                <div>
+                  <h2
+                    style={{
+                      color: "#f8fafc",
+                      fontSize: 19,
+                      fontWeight: 700,
+                      margin: "0 0 3px",
+                      letterSpacing: -0.3,
+                    }}
+                  >
                     {selected.label}
                   </h2>
                   {selected.species && (
@@ -2750,6 +2767,39 @@ export default function SoundMapInner() {
                 </>
               )}
             </div>
+
+            {/* Visual art (GIF / Video) */}
+            {(selected.gifStorageId || selected.videoStorageId || selected.gifStatus === "generating" || selected.videoStatus === "generating" || selected.gifStatus === "pending" || selected.videoStatus === "pending") && (
+              <div
+                style={{
+                  margin: "12px 20px 0",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                {selected.gifStorageId ? (
+                  <MediaFromStorage
+                    storageId={selected.gifStorageId as Id<"_storage">}
+                    type="gif"
+                  />
+                ) : (selected.gifStatus === "generating" || selected.gifStatus === "pending") ? (
+                  <div style={{ padding: "12px 16px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, color: "rgba(255,255,255,.4)", fontSize: 11, textAlign: "center" }}>
+                    Generating pixel art GIF...
+                  </div>
+                ) : null}
+                {selected.videoStorageId ? (
+                  <MediaFromStorage
+                    storageId={selected.videoStorageId as Id<"_storage">}
+                    type="video"
+                  />
+                ) : (selected.videoStatus === "generating" || selected.videoStatus === "pending") ? (
+                  <div style={{ padding: "12px 16px", background: "rgba(255,255,255,.03)", border: "1px solid rgba(255,255,255,.06)", borderRadius: 12, color: "rgba(255,255,255,.4)", fontSize: 11, textAlign: "center" }}>
+                    Generating Veo video...
+                  </div>
+                ) : null}
+              </div>
+            )}
 
             {/* ── Metadata grid ── */}
             <div style={{ padding: "14px 20px 0", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -3060,5 +3110,64 @@ function AudioPlayerConvex({
         </ScrubBarContainer>
       </div>
     </div>
+  );
+}
+
+// ─── MediaFromStorage ─────────────────────────────────────────────────────────
+// Resolves a Convex storageId and renders either a GIF or video.
+function MediaFromStorage({
+  storageId,
+  type,
+}: {
+  storageId: Id<"_storage">;
+  type: "gif" | "video";
+}) {
+  const url = useQuery(api.uploads.getStorageUrl, { storageId });
+
+  if (!url) {
+    return (
+      <div
+        style={{
+          padding: "12px 16px",
+          background: "rgba(255,255,255,.03)",
+          border: "1px solid rgba(255,255,255,.06)",
+          borderRadius: 12,
+          color: "rgba(255,255,255,.3)",
+          fontSize: 11,
+          textAlign: "center",
+        }}
+      >
+        Loading {type === "gif" ? "GIF" : "video"}...
+      </div>
+    );
+  }
+
+  if (type === "gif") {
+    return (
+      <img
+        src={url}
+        alt="Pixel art visualization"
+        style={{
+          width: "100%",
+          borderRadius: 12,
+          imageRendering: "pixelated",
+        }}
+      />
+    );
+  }
+
+  return (
+    <video
+      src={url}
+      controls
+      autoPlay
+      loop
+      muted
+      playsInline
+      style={{
+        width: "100%",
+        borderRadius: 12,
+      }}
+    />
   );
 }
