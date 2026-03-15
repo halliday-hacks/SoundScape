@@ -8,14 +8,18 @@ export default defineSchema({
     timestamp: v.number(), // Unix ms
     lat: v.optional(v.float64()),
     lon: v.optional(v.float64()),
-    // Classification scores (0.0–1.0)
-    bird: v.float64(),
-    insect: v.float64(),
-    traffic: v.float64(),
-    wind: v.float64(),
-    construction: v.float64(),
-    silence: v.float64(),
-    dominantClass: v.string(), // "bird" | "insect" | "traffic" | "wind" | "construction" | "silence"
+    // Classification scores (0.0–1.0) — optional to tolerate legacy records with different field names
+    bird: v.optional(v.float64()), // legacy singular form
+    insect: v.optional(v.float64()), // legacy singular form
+    wind: v.optional(v.float64()), // legacy field
+    birds: v.optional(v.float64()),
+    insects: v.optional(v.float64()),
+    rain: v.optional(v.float64()),
+    traffic: v.optional(v.float64()),
+    music: v.optional(v.float64()),
+    construction: v.optional(v.float64()),
+    silence: v.optional(v.float64()),
+    dominantClass: v.string(), // "birds" | "insects" | "rain" | "traffic" | "music" | "construction" | "silence"
     confidence: v.float64(),
     species: v.optional(v.string()), // e.g. "Dacelo novaeguineae"
     speciesCommon: v.optional(v.string()), // e.g. "Laughing Kookaburra"
@@ -42,6 +46,13 @@ export default defineSchema({
     listenCount: v.number(),
     tags: v.optional(v.array(v.string())),
     elasticSynced: v.optional(v.boolean()),
+    gifStorageId: v.optional(v.id("_storage")),
+    videoStorageId: v.optional(v.id("_storage")),
+    gifStatus: v.optional(v.string()), // "pending" | "generating" | "done" | "failed"
+    videoStatus: v.optional(v.string()), // "pending" | "generating" | "done" | "failed"
+    yamnetLabels: v.optional(
+      v.array(v.object({ label: v.string(), score: v.float64() })),
+    ),
   })
     .index("by_userId", ["userId"])
     .index("by_likeCount", ["likeCount"])

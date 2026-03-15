@@ -1,5 +1,5 @@
 import { Header } from "./header";
-import { PixelCanvas } from "@/components/pixel-canvas";
+import { DashboardClient } from "./DashboardClient";
 
 const Page = async () => {
   return (
@@ -15,7 +15,7 @@ const Page = async () => {
               Listen · Visualise · Map
             </span>
           </div>
-          <PixelCanvas />
+          <DashboardClient />
         </div>
       </div>
     </div>

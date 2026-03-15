@@ -8,22 +8,24 @@ import { PixelWorldEngine, type Classification } from "@/lib/pixel-engine";
 // ---------------------------------------------------------------------------
 
 const DEFAULTS: Classification = {
-  bird: 0.35,
-  insect: 0.25,
+  birds: 0.35,
+  insects: 0.25,
+  rain: 0.1,
   traffic: 0,
+  music: 0,
   construction: 0,
-  wind: 0.1,
   silence: 0.3,
   biodiversityScore: 58,
-  dominantClass: "bird",
+  dominantClass: "birds",
 };
 
 const CAT_CONFIG = [
-  { key: "bird"         as const, label: "Birds",        color: "#7DD3FC", emoji: "🐦" },
-  { key: "insect"       as const, label: "Insects",      color: "#A5B4FC", emoji: "🦋" },
+  { key: "birds"        as const, label: "Birds",        color: "#7DD3FC", emoji: "🐦" },
+  { key: "insects"      as const, label: "Insects",      color: "#A5B4FC", emoji: "🦋" },
+  { key: "rain"         as const, label: "Rain / Wind",  color: "#93C5FD", emoji: "🌧️" },
   { key: "traffic"      as const, label: "Traffic",      color: "#F87171", emoji: "🚗" },
+  { key: "music"        as const, label: "Music",        color: "#C4B5FD", emoji: "🎵" },
   { key: "construction" as const, label: "Construction", color: "#FBB040", emoji: "🔨" },
-  { key: "wind"         as const, label: "Wind / Rain",  color: "#93C5FD", emoji: "🌧️" },
   { key: "silence"      as const, label: "Silence",      color: "#475569", emoji: "🌫️" },
 ] as const;
 
@@ -34,13 +36,13 @@ function calcBioScore(c: Record<SliderKey, number>): number {
     0,
     Math.min(
       100,
-      c.bird * 42 + c.insect * 28 + c.wind * 8 - c.traffic * 38 - c.construction * 26 + 20
+      c.birds * 42 + c.insects * 28 + c.rain * 8 - c.traffic * 38 - c.construction * 26 + 20
     )
   );
 }
 
 function calcDominant(c: Record<SliderKey, number>): string {
-  const keys: SliderKey[] = ["bird", "insect", "traffic", "construction", "wind", "silence"];
+  const keys: SliderKey[] = ["birds", "insects", "rain", "traffic", "music", "construction", "silence"];
   return keys.reduce((a, b) => (c[a] >= c[b] ? a : b), "silence" as SliderKey);
 }
 
@@ -152,7 +154,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       {/* Classification bars + demo controls                                */}
       {/* ------------------------------------------------------------------ */}
       <div className="px-3 sm:px-0 mt-3 space-y-3">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
+        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-7">
           {CAT_CONFIG.map(({ key, label, color, emoji }) => (
             <div key={key} className="space-y-1">
               <div className="flex items-center gap-1">
