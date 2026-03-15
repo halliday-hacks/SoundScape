@@ -57,17 +57,17 @@ export default async function LandingPage() {
               <div className="flex items-center gap-2">
                 <Link
                   href="/dashboard?tab=leaderboard"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] transition-colors group"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/30 transition-colors group"
                 >
                   <span className="text-sm">🏆</span>
-                  <span className="text-[12px] font-medium text-white/70 group-hover:text-white transition-colors">Leaderboard</span>
+                  <span className="text-[12px] font-medium text-white/80 group-hover:text-white transition-colors">Leaderboard</span>
                 </Link>
                 <Link
                   href="/dashboard?tab=recordings"
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/[0.08] bg-white/[0.03] hover:bg-white/[0.06] hover:border-white/[0.14] transition-colors group"
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-md border border-white/20 bg-white/[0.04] hover:bg-white/[0.08] hover:border-white/30 transition-colors group"
                 >
                   <span className="text-sm">🎵</span>
-                  <span className="text-[12px] font-medium text-white/70 group-hover:text-white transition-colors">Recent</span>
+                  <span className="text-[12px] font-medium text-white/80 group-hover:text-white transition-colors">Recent</span>
                 </Link>
               </div>
             </div>

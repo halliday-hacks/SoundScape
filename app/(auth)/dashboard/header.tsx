@@ -83,7 +83,7 @@ export const Header = () => {
           }}
         >
           <Map size={14} />
-          Sound Map
+          Sound Map →
         </Link>
         {/* User + hamburger */}
         <div className="flex items-center gap-2 pl-3 border-l border-[rgba(139,92,246,0.09)]">
