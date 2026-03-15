@@ -21,7 +21,7 @@ export function DashboardClient() {
           <TabButton label="Recordings" active={activeTab === "recordings"} onClick={() => setActiveTab("recordings")} />
         </div>
         <Link
-          href="/sound-map"
+          href="/map"
           className="mb-1 flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold text-white/90 tracking-wide transition-opacity hover:opacity-80"
           style={{
             border: "1px solid transparent",
