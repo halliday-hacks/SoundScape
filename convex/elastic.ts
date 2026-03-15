@@ -17,7 +17,7 @@ export const syncUpload = internalAction({
   args: { id: v.id("uploads") },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const ELASTIC_URL = process.env.ELASTIC_URL;
+    const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/$/, "");
     const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
 
     if (!ELASTIC_URL || !ELASTIC_API_KEY) {
@@ -105,6 +105,41 @@ export const sweepUnsynced = internalAction({
     console.log(`[elastic] Sweep found ${ids.length} unsynced upload(s)`);
     for (const id of ids) {
       await ctx.scheduler.runAfter(0, internal.elastic.syncUpload, { id });
+    }
+    return null;
+  },
+});
+
+/**
+ * Delete a document from the Elastic index by its Convex upload ID.
+ * Called after a successful deleteUpload mutation so the search index stays consistent.
+ */
+export const deleteFromElastic = internalAction({
+  args: { id: v.string() },
+  returns: v.null(),
+  handler: async (_ctx, args) => {
+    const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/$/, "");
+    const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
+
+    if (!ELASTIC_URL || !ELASTIC_API_KEY) {
+      console.error("[elastic] Missing ELASTIC_URL or ELASTIC_API_KEY env vars");
+      return null;
+    }
+
+    const url = `${ELASTIC_URL}/soundsoil-uploads/_doc/${args.id}`;
+    try {
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: { Authorization: `ApiKey ${ELASTIC_API_KEY}` },
+      });
+      if (!response.ok && response.status !== 404) {
+        const body = await response.text();
+        console.error(`[elastic] DELETE failed for ${args.id} — ${response.status}: ${body}`);
+      } else {
+        console.log(`[elastic] Deleted ${args.id} from index ✓`);
+      }
+    } catch (err) {
+      console.error(`[elastic] Network error deleting ${args.id}:`, err);
     }
     return null;
   },

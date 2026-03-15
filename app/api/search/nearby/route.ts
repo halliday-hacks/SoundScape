@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ELASTIC_URL = process.env.ELASTIC_URL;
+const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/$/, "");
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
 
 /**

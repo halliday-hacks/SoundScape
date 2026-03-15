@@ -30,7 +30,7 @@ export const create = mutation({
   args: {
     userId: v.string(),
     storageId: v.id("_storage"),
-    title: v.string(),
+    title: v.optional(v.string()),
     description: v.optional(v.string()),
     durationSeconds: v.optional(v.float64()),
     lat: v.optional(v.float64()),
@@ -44,6 +44,7 @@ export const create = mutation({
   handler: async (ctx, args) => {
     const id = await ctx.db.insert("uploads", {
       ...args,
+      title: args.title ?? "Untitled Recording",
       likeCount: 0,
       listenCount: 0,
       elasticSynced: false,
@@ -144,6 +145,20 @@ export const like = mutation({
       }
     }
     return null;
+  },
+});
+
+export const hasLiked = query({
+  args: { uploadId: v.id("uploads"), userId: v.string() },
+  returns: v.boolean(),
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("userLikes")
+      .withIndex("by_userId_uploadId", (q) =>
+        q.eq("userId", args.userId).eq("uploadId", args.uploadId),
+      )
+      .unique();
+    return !!existing;
   },
 });
 
@@ -276,6 +291,11 @@ export const deleteUpload = mutation({
 
     // Delete the upload record
     await ctx.db.delete(args.uploadId);
+
+    // Remove from Elasticsearch index (fire-and-forget — runs in a Node action)
+    await ctx.scheduler.runAfter(0, internal.elastic.deleteFromElastic, {
+      id: args.uploadId,
+    });
 
     return null;
   },

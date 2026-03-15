@@ -46,8 +46,6 @@ interface Location {
 export interface UploadResult {
   lat: number;
   lon: number;
-  title: string;
-  dominantClass: string;
 }
 
 interface Props {
@@ -131,9 +129,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Meta form ──
-  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dominantClass, setDominantClass] = useState("birds");
 
   // ── Recording internals ──
   const mrRef = useRef<MediaRecorder | null>(null);
@@ -454,11 +450,6 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       setError("No audio selected.");
       return;
     }
-    if (!title.trim()) {
-      setError("Please enter a title.");
-      return;
-    }
-
     setStep("uploading");
     setError("");
     try {
@@ -474,24 +465,16 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       await createUpload({
         userId: session.user.id,
         storageId,
-        title: title.trim(),
         description: description.trim() || undefined,
         durationSeconds: mode === "record" ? recordingTime : (mode === "file" && fileDuration > 0 ? fileDuration : undefined),
         lat: location?.lat,
         lon: location?.lon,
         locationLabel: location?.label || undefined,
-        dominantClass,
-        tags: [dominantClass],
       });
 
       setStep("success");
       if (location)
-        onSuccess({
-          lat: location.lat,
-          lon: location.lon,
-          title: title.trim(),
-          dominantClass,
-        });
+        onSuccess({ lat: location.lat, lon: location.lon });
       setTimeout(onClose, 2200);
     } catch (e: unknown) {
       const err = e as Error;
@@ -504,9 +487,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 
   const canSubmit =
-    ((mode === "record" && audioBlob) ||
-      (mode === "file" && selectedFile)) &&
-    title.trim().length > 0;
+    (mode === "record" && !!audioBlob) ||
+    (mode === "file" && !!selectedFile);
 
   const resetMode = (m: Mode) => {
     setMode(m);
@@ -1227,12 +1209,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
                   {/* Meta form */}
                   <MetaForm
-                    title={title}
-                    setTitle={setTitle}
                     desc={description}
                     setDesc={setDescription}
-                    dc={dominantClass}
-                    setDc={setDominantClass}
                   />
                 </div>
               )}
@@ -1270,9 +1248,6 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                     audio.onloadedmetadata = () => {
                       setFileDuration(audio.duration);
                     };
-
-                    if (!title)
-                      setTitle(f.name.replace(/\.[^/.]+$/, ""));
                   }}
                 />
                 {selectedFile ? (
@@ -1531,12 +1506,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
               {(selectedFile || location) && (
                 <MetaForm
-                  title={title}
-                  setTitle={setTitle}
                   desc={description}
                   setDesc={setDescription}
-                  dc={dominantClass}
-                  setDc={setDominantClass}
                 />
               )}
             </>
@@ -1794,116 +1765,35 @@ function LocationBadge({
 }
 
 function MetaForm({
-  title,
-  setTitle,
   desc,
   setDesc,
-  dc,
-  setDc,
 }: {
-  title: string;
-  setTitle: (v: string) => void;
   desc: string;
   setDesc: (v: string) => void;
-  dc: string;
-  setDc: (v: string) => void;
 }) {
   return (
     <div>
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: C.textMid,
-            letterSpacing: 0.6,
-            display: "block",
-            marginBottom: 6,
-            textTransform: "uppercase",
-          }}
-        >
-          Title
-        </label>
-        <input
-          type="text"
-          placeholder="e.g. Morning birds at the park"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          maxLength={120}
-          style={inputStyle}
-        />
-      </div>
-      <div style={{ marginBottom: 14 }}>
-        <label
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: C.textMid,
-            letterSpacing: 0.6,
-            display: "block",
-            marginBottom: 6,
-            textTransform: "uppercase",
-          }}
-        >
-          Description
-        </label>
-        <textarea
-          placeholder="What do you hear?"
-          value={desc}
-          onChange={(e) => setDesc(e.target.value)}
-          rows={2}
-          maxLength={400}
-          style={{ ...inputStyle, resize: "none" as const }}
-        />
-      </div>
-      <div>
-        <label
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            color: C.textMid,
-            letterSpacing: 0.6,
-            display: "block",
-            marginBottom: 8,
-            textTransform: "uppercase",
-          }}
-        >
-          Sound type
-        </label>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 5,
-          }}
-        >
-          {SOUND_TYPES.map((t) => (
-            <button
-              key={t.value}
-              onClick={() => setDc(t.value)}
-              style={{
-                background:
-                  dc === t.value ? C.accentDim : C.surface,
-                border: `1px solid ${dc === t.value ? C.accentBorder : C.border}`,
-                borderRadius: 20,
-                padding: "5px 10px",
-                fontSize: 11,
-                color:
-                  dc === t.value ? C.accent : C.textMid,
-                fontWeight: dc === t.value ? 600 : 400,
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 4,
-                transition: "all .12s",
-              }}
-            >
-              <span>{t.icon}</span>
-              <span>{t.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
+      <label
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: C.textMid,
+          letterSpacing: 0.6,
+          display: "block",
+          marginBottom: 6,
+          textTransform: "uppercase",
+        }}
+      >
+        Description <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional)</span>
+      </label>
+      <textarea
+        placeholder="What do you hear?"
+        value={desc}
+        onChange={(e) => setDesc(e.target.value)}
+        rows={3}
+        maxLength={400}
+        style={{ ...inputStyle, resize: "none" as const }}
+      />
     </div>
   );
 }
