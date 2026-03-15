@@ -106,6 +106,19 @@ function safeAbort(controller: AbortController | null, reason: string) {
   }
 }
 
+async function safeFetch(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  context: string,
+) {
+  try {
+    return await fetch(input, init);
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    throw new Error(`${context}: network request failed`);
+  }
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
@@ -506,20 +519,23 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPreviewGifUrl(null);
     setPreviewGifBlob(null);
     try {
-      const res = await fetch("/api/soundsoil/preview-gif", {
+      const res = await safeFetch("/api/soundsoil/preview-gif", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yamnetResult: result }),
         signal: controller.signal,
-      });
-      if (!res.ok) throw new Error("GIF generation failed");
+      }, "GIF preview");
+      if (!res.ok) throw new Error(`GIF generation failed (${res.status})`);
       const blob = await res.blob();
       if (controller.signal.aborted) return;
       const url = URL.createObjectURL(blob);
       setPreviewGifBlob(blob);
       setPreviewGifUrl(url);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") console.error("GIF preview error:", e);
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate GIF preview. Please retry.");
+        console.error("GIF preview error:", e);
+      }
     } finally {
       if (!controller.signal.aborted) setGifGenerating(false);
     }
@@ -535,20 +551,23 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPreviewVideoUrl(null);
     setPreviewVideoBlob(null);
     try {
-      const res = await fetch("/api/soundsoil/preview-video", {
+      const res = await safeFetch("/api/soundsoil/preview-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yamnetResult: result }),
         signal: controller.signal,
-      });
-      if (!res.ok) throw new Error("Video generation failed");
+      }, "Video preview");
+      if (!res.ok) throw new Error(`Video generation failed (${res.status})`);
       const blob = await res.blob();
       if (controller.signal.aborted) return;
       const url = URL.createObjectURL(blob);
       setPreviewVideoBlob(blob);
       setPreviewVideoUrl(url);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") console.error("Video preview error:", e);
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate video preview. Please retry.");
+        console.error("Video preview error:", e);
+      }
     } finally {
       if (!controller.signal.aborted) setVideoGenerating(false);
     }
@@ -571,7 +590,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       const wavBlob = await audioFileToWav(new File([blob], "audio.webm", { type: blob.type }));
       const fd = new FormData();
       fd.append("audio", wavBlob, "audio.wav");
-      const res = await fetch("/api/yamnet-tag", { method: "POST", body: fd });
+      const res = await safeFetch(
+        "/api/yamnet-tag",
+        { method: "POST", body: fd },
+        "Auto-tagging",
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.dominantClass) setDominantClass(data.dominantClass);
@@ -591,7 +614,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         generatePreviewVideo(result);
       }
     } catch {
-      // Auto-tag failed silently — user can still pick manually
+      setError("Auto-tagging failed. You can still choose the sound type manually.");
     } finally {
       setTagging(false);
     }
@@ -614,11 +637,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     try {
       // Upload audio file
       const uploadUrl = await generateUploadUrl();
-      const r = await fetch(uploadUrl, {
+      const r = await safeFetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": (file.type || "audio/webm").split(";")[0] },
         body: file,
-      });
+      }, "Audio upload");
       if (!r.ok) throw new Error(`Upload failed (${r.status})`);
       const { storageId } = await r.json();
 
@@ -626,11 +649,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       let gifStorageId: string | undefined;
       if (previewGifBlob) {
         const gifUrl = await generateUploadUrl();
-        const gifRes = await fetch(gifUrl, {
+        const gifRes = await safeFetch(gifUrl, {
           method: "POST",
           headers: { "Content-Type": "image/gif" },
           body: previewGifBlob,
-        });
+        }, "GIF upload");
         if (gifRes.ok) {
           const gifData = await gifRes.json();
           gifStorageId = gifData.storageId;
@@ -641,11 +664,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       let videoStorageId: string | undefined;
       if (previewVideoBlob) {
         const videoUrl = await generateUploadUrl();
-        const videoRes = await fetch(videoUrl, {
+        const videoRes = await safeFetch(videoUrl, {
           method: "POST",
           headers: { "Content-Type": "video/mp4" },
           body: previewVideoBlob,
-        });
+        }, "Video upload");
         if (videoRes.ok) {
           const videoData = await videoRes.json();
           videoStorageId = videoData.storageId;
