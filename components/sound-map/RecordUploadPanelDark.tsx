@@ -130,7 +130,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   // ── Meta form ──
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dominantClass, setDominantClass] = useState("birds");
+  const [dominantClass, setDominantClass] = useState("");
   const [tagging, setTagging] = useState(false);
 
   // ── Visual preview state ──
@@ -213,7 +213,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       try {
         const buffer = await ctx.decodeAudioData(reader.result as ArrayBuffer);
         const raw = buffer.getChannelData(0);
-        const bars = 120;
+        const bars = 200;
         const block = Math.floor(raw.length / bars);
         const out: number[] = [];
         for (let i = 0; i < bars; i++) {
@@ -646,6 +646,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       await createUpload({
         userId: session.user.id,
         storageId,
+        title: title.trim() || undefined,
         description: description.trim() || undefined,
         durationSeconds: mode === "record" ? recordingTime : (mode === "file" && fileDuration > 0 ? fileDuration : undefined),
         lat: location?.lat,
@@ -740,8 +741,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         style={{
           position: "relative",
           pointerEvents: "all",
-          width: 380,
-          maxWidth: "100vw",
+          width: "min(380px, 100vw)",
           height: "100%",
           background: `linear-gradient(180deg, #060606 0%, ${C.bg} 100%)`,
           borderLeft: `1px solid ${C.border}`,
@@ -1228,11 +1228,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
                     {/* Static waveform visualization */}
                     {waveformData.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
+                      <div style={{ marginBottom: 12, margin: "0 -16px 12px", padding: "0 0" }}>
                         <Waveform
                           data={waveformData}
                           barColor={C.accent}
-                          barWidth={2}
+                          barWidth={3}
                           barGap={1}
                           barRadius={1}
                           height={56}
