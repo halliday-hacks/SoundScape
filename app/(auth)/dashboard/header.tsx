@@ -10,24 +10,24 @@ const UserProfile = () => {
   const { data: session } = authClient.useSession();
   const user = session?.user;
   return (
-    <div className="flex items-center space-x-2">
+    <div className="flex items-center gap-4">
       {user?.image ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={user.image}
           alt={user.name}
-          width={40}
-          height={40}
-          className="rounded-full"
+          width={36}
+          height={36}
+          className="rounded-full ring-1 ring-[rgba(34,211,238,0.2)]"
         />
       ) : (
-        <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900 flex items-center justify-center text-orange-600 dark:text-orange-200 font-medium">
+        <div className="w-9 h-9 rounded-full bg-[rgba(34,211,238,0.1)] border border-[rgba(34,211,238,0.2)] flex items-center justify-center text-[#22D3EE] font-semibold text-sm">
           {user?.name?.[0]?.toUpperCase() ?? "?"}
         </div>
       )}
       <div>
-        <h1 className="font-medium">{user?.name ?? ""}</h1>
-        <p className="text-sm text-neutral-500">{user?.email ?? ""}</p>
+        <p className="font-medium text-sm text-[#E2E8F0] leading-none">{user?.name ?? ""}</p>
+        <p className="text-xs text-[#64748B] mt-0.5">{user?.email ?? ""}</p>
       </div>
     </div>
   );
@@ -45,27 +45,38 @@ export const Header = () => {
     });
   };
   return (
-    <header className="flex items-center justify-between">
+    <header className="flex items-center justify-between py-1">
       <UserProfile />
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="sm" asChild>
+      <div className="flex items-center gap-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="text-[#64748B] hover:text-[#22D3EE] hover:bg-[rgba(34,211,238,0.06)] gap-1.5 transition-colors"
+        >
           <Link href="/map">
-            <div className="flex items-center gap-2">
-              <Map size={16} />
-              Sound Map
-            </div>
+            <Map size={15} />
+            Sound Map
           </Link>
         </Button>
-        <Button variant="ghost" size="sm" asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          asChild
+          className="text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)] gap-1.5 transition-colors"
+        >
           <Link href="/settings">
-            <div className="flex items-center gap-2">
-              <Settings size={16} />
-              Settings
-            </div>
+            <Settings size={15} />
+            Settings
           </Link>
         </Button>
-        <Button variant="ghost" size="sm" onClick={handleSignOut}>
-          <LogOut size={16} className="mr-2" />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleSignOut}
+          className="text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)] gap-1.5 transition-colors"
+        >
+          <LogOut size={15} />
           Sign out
         </Button>
       </div>

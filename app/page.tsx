@@ -10,13 +10,21 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#0D0F0A] text-[#EDE8DC]">
+    <div className="min-h-screen flex flex-col bg-[#06080F] text-[#E2E8F0]">
+      {/* Top ambient line */}
+      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#22D3EE33] to-transparent" />
+
       {/* Nav */}
-      <header className="flex items-center justify-between px-4 sm:px-6 py-3">
-        <div className="flex items-center gap-2">
-          <span className="font-bold tracking-tight text-[#EDE8DC]">SoundScape</span>
-          <span className="hidden sm:inline text-xs text-[#9E9B8E] italic">
-            Listen to the Earth. Watch it Grow.
+      <header className="flex items-center justify-between px-4 sm:px-6 py-4">
+        <div className="flex items-center gap-3">
+          <span
+            className="font-bold tracking-tight text-[#E2E8F0] text-lg"
+            style={{ fontFamily: "var(--font-syne, sans-serif)", letterSpacing: "-0.02em" }}
+          >
+            Sound<span className="text-[#22D3EE]">Scape</span>
+          </span>
+          <span className="hidden sm:inline text-xs text-[#64748B] tracking-widest uppercase">
+            Listen · Visualise · Map
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -24,16 +32,16 @@ export default async function LandingPage() {
             variant="ghost"
             size="sm"
             asChild
-            className="text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)]"
+            className="text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)]"
           >
             <Link href="/sign-in">Sign in</Link>
           </Button>
           <Button
             size="sm"
             asChild
-            className="bg-[#4A9B3F] text-[#EDE8DC] hover:bg-[#3d8434] border-0 shadow-none"
+            className="bg-[#22D3EE] text-[#06080F] hover:bg-[#06B6D4] border-0 shadow-none font-semibold tracking-tight"
           >
-            <Link href="/sign-up">Start Listening</Link>
+            <Link href="/sign-up">Get Started</Link>
           </Button>
         </div>
       </header>
@@ -44,33 +52,33 @@ export default async function LandingPage() {
           <PixelCanvas />
         </div>
 
-        {/* CTA — 16px clearance below canvas */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-4 pb-6">
-          <p className="text-sm text-[#9E9B8E] max-w-md text-center sm:text-left">
+        {/* CTA row */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-4 pb-8">
+          <p className="text-sm text-[#64748B] max-w-md text-center sm:text-left leading-relaxed">
             Real-time environmental audio classification that turns your neighbourhood
             soundscape into a living pixel world.
           </p>
-          <div className="flex items-center gap-3 shrink-0">
+          <div className="flex items-center gap-2 shrink-0">
             <Button
               variant="outline"
               size="sm"
               asChild
-              className="bg-transparent border-[rgba(255,255,255,0.2)] text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)] shadow-none"
+              className="bg-transparent border-[rgba(34,211,238,0.2)] text-[#64748B] hover:text-[#22D3EE] hover:bg-[rgba(34,211,238,0.06)] hover:border-[rgba(34,211,238,0.4)] shadow-none transition-all"
             >
-              <Link href="/map">🗺 Sound Map</Link>
+              <Link href="/map">Sound Map</Link>
             </Button>
             <Button
               variant="outline"
               size="sm"
               asChild
-              className="bg-transparent border-[rgba(255,255,255,0.2)] text-[#9E9B8E] hover:text-[#EDE8DC] hover:bg-[rgba(255,255,255,0.06)] shadow-none"
+              className="bg-transparent border-[rgba(34,211,238,0.2)] text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)] shadow-none"
             >
               <Link href="/sign-in">Sign in</Link>
             </Button>
             <Button
               size="sm"
               asChild
-              className="bg-[#4A9B3F] text-[#EDE8DC] hover:bg-[#3d8434] border-0 shadow-none"
+              className="bg-[#22D3EE] text-[#06080F] hover:bg-[#06B6D4] border-0 shadow-none font-semibold"
             >
               <Link href="/sign-up">Start Listening →</Link>
             </Button>

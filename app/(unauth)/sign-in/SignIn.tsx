@@ -376,7 +376,7 @@ export default function SignIn() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-neutral-800" />
+              <span className="w-full border-t border-[rgba(34,211,238,0.10)]" />
             </div>
             <div className="relative flex justify-center text-xs">
               <span className="bg-card px-2 text-neutral-500">
@@ -458,7 +458,7 @@ export default function SignIn() {
               className="underline"
               target="_blank"
             >
-              <span className="dark:text-orange-200/90">better-auth.</span>
+              <span className="dark:text-[#22D3EE]/80">better-auth.</span>
             </a>
           </p>
         </div>
