@@ -1630,11 +1630,13 @@ function ClusterTracker({
 // Without it, falls back to the decorative CSS animation.
 function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] }) {
   const staticBars = [
-    18, 42, 28, 58, 34, 66, 48, 30, 72, 44, 24, 60, 38, 52, 22, 64, 32, 50, 26, 62,
+    18, 32, 52, 24, 44, 68, 36, 56, 28, 64, 40, 72, 20, 48, 60, 30, 50, 38, 66, 26,
+    54, 42, 70, 22, 46, 58, 34, 62, 16, 44, 74, 28, 52, 36, 60, 24, 48, 40, 68, 30,
+    56, 20, 64, 38, 54, 26, 46, 72,
   ];
   const isLive = amplitudes != null;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 3, height: 40 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: 1.5, height: 40, width: "100%" }}>
       {staticBars.map((h, i) => {
         const amp = amplitudes?.[i] ?? 0;
         const liveH = isLive ? Math.max(5, amp * 100) : h;
@@ -1642,7 +1644,8 @@ function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] 
           <div
             key={i}
             style={{
-              width: 3,
+              flex: 1,
+              minWidth: 0,
               background: color,
               borderRadius: 3,
               height: `${liveH}%`,
@@ -2960,7 +2963,7 @@ function AudioPlayerConvex({
   const ctxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const animFrameRef = useRef<number>(0);
-  const BARS = 20;
+  const BARS = 48;
   const [barAmplitudes, setBarAmplitudes] = useState<number[]>(() => Array(BARS).fill(0));
 
   useEffect(() => {
@@ -3012,7 +3015,7 @@ function AudioPlayerConvex({
     try {
       const ctx = new AudioContext();
       const analyser = ctx.createAnalyser();
-      analyser.fftSize = 64; // 32 frequency bins
+      analyser.fftSize = 128; // 64 frequency bins — enough to drive 48 bars
       const source = ctx.createMediaElementSource(playerRef.current);
       source.connect(analyser);
       analyser.connect(ctx.destination);
