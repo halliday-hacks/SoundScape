@@ -20,13 +20,13 @@ const DEFAULTS: Classification = {
 };
 
 const CAT_CONFIG = [
-  { key: "birds"        as const, label: "Birds",        color: "#4CAF50", emoji: "🐦" },
-  { key: "insects"      as const, label: "Insects",      color: "#8BC34A", emoji: "🦋" },
-  { key: "rain"         as const, label: "Rain / Wind",  color: "#42A5F5", emoji: "🌧️" },
-  { key: "traffic"      as const, label: "Traffic",      color: "#F44336", emoji: "🚗" },
-  { key: "music"        as const, label: "Music",        color: "#AB47BC", emoji: "🎵" },
-  { key: "construction" as const, label: "Construction", color: "#FF9800", emoji: "🔨" },
-  { key: "silence"      as const, label: "Silence",      color: "#9E9E9E", emoji: "🌫️" },
+  { key: "birds"        as const, label: "Birds",        color: "#22D3EE", emoji: "🐦" },
+  { key: "insects"      as const, label: "Insects",      color: "#818CF8", emoji: "🦋" },
+  { key: "rain"         as const, label: "Rain / Wind",  color: "#38BDF8", emoji: "🌧️" },
+  { key: "traffic"      as const, label: "Traffic",      color: "#F43F5E", emoji: "🚗" },
+  { key: "music"        as const, label: "Music",        color: "#A78BFA", emoji: "🎵" },
+  { key: "construction" as const, label: "Construction", color: "#FBBF24", emoji: "🔨" },
+  { key: "silence"      as const, label: "Silence",      color: "#94A3B8", emoji: "🌫️" },
 ] as const;
 
 type SliderKey = Exclude<keyof Classification, "biodiversityScore" | "dominantClass">;
@@ -61,9 +61,6 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
   const [demo, setDemo] = useState<Classification>(DEFAULTS);
 
   const active = classification ?? demo;
-  const bioScore = Math.round(active.biodiversityScore);
-  const bioSegments = Math.round(bioScore / 10);
-
   // Boot engine once
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -98,96 +95,35 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Canvas                                                              */}
       {/* ------------------------------------------------------------------ */}
-      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(255,255,255,0.08)] bg-[#0D0F0A]">
+      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(139,92,246,0.08)] bg-[#080B14]">
         <canvas
           ref={canvasRef}
           className="block w-full"
           style={{ imageRendering: "pixelated", aspectRatio: "2 / 1" }}
         />
 
-        {/* Top-left: dominant class badge */}
-        <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/55 px-2 py-1 uppercase text-[#EDE8DC]"
-          style={{ fontFamily: "var(--font-pixel)", fontSize: "7px", letterSpacing: "0.05em" }}
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full animate-pulse shrink-0"
-            style={{
-              backgroundColor:
-                CAT_CONFIG.find((c) => c.key === active.dominantClass)?.color ?? "#9E9E9E",
-            }}
-          />
-          {active.dominantClass}
-        </div>
 
-        {/* Top-right: 10-segment bio score bar */}
-        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 bg-black/55 px-2 py-1 rounded-sm">
-          <span style={{ fontFamily: "var(--font-pixel)", fontSize: "6px", color: "#9E9B8E" }}>
-            BIO
-          </span>
-          <div className="flex items-center gap-[2px]">
-            {Array.from({ length: 10 }, (_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: "6px",
-                  height: "10px",
-                  backgroundColor: i < bioSegments ? "#C47D0A" : "rgba(255,255,255,0.12)",
-                }}
-              />
-            ))}
-          </div>
-        </div>
 
-        {/* Bottom-right: demo label */}
-        {isDemoMode && (
-          <div
-            className="absolute bottom-2 right-2 rounded-sm px-2 py-1 text-[#C47D0A] border border-[rgba(197,125,10,0.35)] bg-[rgba(197,125,10,0.12)]"
-            style={{ fontFamily: "var(--font-pixel)", fontSize: "7px" }}
-          >
-            DEMO
-          </div>
-        )}
       </div>
 
       {/* ------------------------------------------------------------------ */}
-      {/* Classification bars + demo controls                                */}
+      {/* Demo controls                                                       */}
       {/* ------------------------------------------------------------------ */}
       <div className="px-3 sm:px-0 mt-3 space-y-3">
-        <div className="grid grid-cols-3 gap-x-4 gap-y-2 sm:grid-cols-6">
-          {CAT_CONFIG.map(({ key, label, color, emoji }) => (
-            <div key={key} className="space-y-1">
-              <div className="flex items-center gap-1">
-                <span className="text-[10px]">{emoji}</span>
-                <span className="truncate text-[10px] text-[#9E9B8E]">{label}</span>
-              </div>
-              <div className="h-1 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
-                <div
-                  className="h-full rounded-full transition-all duration-500"
-                  style={{ width: `${active[key] * 100}%`, backgroundColor: color }}
-                />
-              </div>
-              <div className="font-mono text-[10px] text-[#9E9B8E]">
-                {Math.round(active[key] * 100)}%
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Demo sliders (hidden when real classification is provided) */}
         {isDemoMode && (
-          <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#171A12] p-4">
+          <div className="rounded-lg border border-[rgba(139,92,246,0.09)] bg-[#0D1117] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#C47D0A] animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#9E9B8E]">
-                Demo — drag to simulate environment
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/60">
+                Live — drag to simulate environment
               </span>
             </div>
             <div className="grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2">
               {CAT_CONFIG.filter((c) => c.key !== "silence").map(({ key, label, color, emoji }) => (
                 <div key={key} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 text-xs" style={{ color }}>
-                    {emoji} {label}
+                  <span className="w-28 shrink-0 text-xs text-[#F1F5F9]">
+                    <span style={{ color }}>{emoji}</span> {label}
                   </span>
                   <input
                     type="range"
@@ -199,7 +135,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
                     className="h-1 flex-1 cursor-pointer appearance-none rounded-full"
                     style={{ accentColor: color }}
                   />
-                  <span className="w-7 text-right font-mono text-[10px] text-[#9E9B8E]">
+                  <span className="w-7 text-right font-mono text-[10px] text-[#6B7280]">
                     {Math.round(demo[key] * 100)}
                   </span>
                 </div>

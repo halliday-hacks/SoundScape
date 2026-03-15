@@ -73,34 +73,34 @@ function UserPopup({ user, coords }: { user: LeaderboardUser; coords: PopupCoord
   return (
     <div
       style={{ position: "fixed", top: coords.y, left: coords.x, width: POPUP_WIDTH, zIndex: 9999 }}
-      className="bg-neutral-800 border border-neutral-600 rounded-lg p-3 shadow-2xl pointer-events-none text-xs"
+      className="bg-[#0C0F1A] border border-[rgba(147,197,253,0.12)] rounded-lg p-3 shadow-2xl pointer-events-none text-xs"
     >
       <div className="flex items-center gap-2 mb-2">
         {user.image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={user.image} alt={user.name} className="w-8 h-8 rounded-full" />
         ) : (
-          <div className="w-8 h-8 rounded-full bg-neutral-600 flex items-center justify-center text-neutral-200 font-semibold">
+          <div className="w-8 h-8 rounded-full bg-[#1C2535] flex items-center justify-center text-[#DDE4F0] font-semibold">
             {user.name[0]?.toUpperCase() ?? "?"}
           </div>
         )}
         <div>
-          <div className="text-neutral-100 font-medium">{user.name}</div>
-          {user.username && <div className="text-neutral-500">@{user.username}</div>}
+          <div className="text-[#DDE4F0] font-medium">{user.name}</div>
+          {user.username && <div className="text-[#5C6A82]">@{user.username}</div>}
         </div>
       </div>
       <div className="grid grid-cols-3 gap-1 text-center">
-        <div className="bg-neutral-900 rounded p-1">
-          <div className="text-green-400 font-semibold">{user.uploadCount}</div>
-          <div className="text-neutral-500">uploads</div>
+        <div className="bg-[#0B0E18] rounded p-1">
+          <div className="text-[#7DD3FC] font-semibold">{user.uploadCount}</div>
+          <div className="text-[#5C6A82]">uploads</div>
         </div>
-        <div className="bg-neutral-900 rounded p-1">
-          <div className="text-red-400 font-semibold">{user.totalLikes}</div>
-          <div className="text-neutral-500">likes</div>
+        <div className="bg-[#0B0E18] rounded p-1">
+          <div className="text-[#F87171] font-semibold">{user.totalLikes}</div>
+          <div className="text-[#5C6A82]">likes</div>
         </div>
-        <div className="bg-neutral-900 rounded p-1">
-          <div className="text-blue-400 font-semibold">{user.totalListens}</div>
-          <div className="text-neutral-500">plays</div>
+        <div className="bg-[#0B0E18] rounded p-1">
+          <div className="text-[#93C5FD] font-semibold">{user.totalListens}</div>
+          <div className="text-[#5C6A82]">plays</div>
         </div>
       </div>
     </div>
@@ -112,33 +112,33 @@ function UploadPopup({ upload, coords }: { upload: RecentUpload; coords: PopupCo
   return (
     <div
       style={{ position: "fixed", top: coords.y, left: coords.x, width: POPUP_WIDTH, zIndex: 9999 }}
-      className="bg-neutral-800 border border-neutral-600 rounded-lg p-3 shadow-2xl pointer-events-none text-xs"
+      className="bg-[#0C0F1A] border border-[rgba(147,197,253,0.12)] rounded-lg p-3 shadow-2xl pointer-events-none text-xs"
     >
       <div className="flex items-start gap-2 mb-2">
         <span className="text-lg">{emoji}</span>
         <div>
-          <div className="text-neutral-100 font-medium leading-tight">{upload.title}</div>
+          <div className="text-[#DDE4F0] font-medium leading-tight">{upload.title}</div>
           {upload.locationLabel && (
-            <div className="text-neutral-500 mt-0.5">{upload.locationLabel}</div>
+            <div className="text-[#5C6A82] mt-0.5">{upload.locationLabel}</div>
           )}
         </div>
       </div>
       {upload.description && (
-        <div className="text-neutral-400 mb-2 italic line-clamp-2">{upload.description}</div>
+        <div className="text-[#5C6A82] mb-2 italic line-clamp-2">{upload.description}</div>
       )}
       <div className="grid grid-cols-3 gap-1 text-center">
-        <div className="bg-neutral-900 rounded p-1">
-          <div className="text-red-400 font-semibold">{upload.likeCount}</div>
-          <div className="text-neutral-500">likes</div>
+        <div className="bg-[#0B0E18] rounded p-1">
+          <div className="text-[#F87171] font-semibold">{upload.likeCount}</div>
+          <div className="text-[#5C6A82]">likes</div>
         </div>
-        <div className="bg-neutral-900 rounded p-1">
-          <div className="text-blue-400 font-semibold">{upload.listenCount}</div>
-          <div className="text-neutral-500">plays</div>
+        <div className="bg-[#0B0E18] rounded p-1">
+          <div className="text-[#93C5FD] font-semibold">{upload.listenCount}</div>
+          <div className="text-[#5C6A82]">plays</div>
         </div>
         {upload.biodiversityScore != null && (
-          <div className="bg-neutral-900 rounded p-1">
-            <div className="text-green-400 font-semibold">{Math.round(upload.biodiversityScore)}</div>
-            <div className="text-neutral-500">bio</div>
+          <div className="bg-[#0B0E18] rounded p-1">
+            <div className="text-[#7DD3FC] font-semibold">{Math.round(upload.biodiversityScore)}</div>
+            <div className="text-[#5C6A82]">bio</div>
           </div>
         )}
       </div>
@@ -184,18 +184,18 @@ export function LeaderboardTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-800">
+      <div className="rounded-xl border border-[rgba(147,197,253,0.09)] bg-[#0B0E18]">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(147,197,253,0.09)]">
           <Trophy size={14} className="text-yellow-400" />
-          <span className="text-sm font-semibold text-neutral-200">Leaderboard</span>
+          <span className="text-sm font-semibold text-[#DDE4F0]">Leaderboard</span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={16} className="animate-spin text-neutral-500" />
+            <Loader2 size={16} className="animate-spin text-[#5C6A82]" />
           </div>
         ) : users.length === 0 ? (
-          <div className="text-center text-neutral-600 text-xs py-10">
+          <div className="text-center text-[#3D4A5C] text-xs py-10">
             No activity yet — use the Seed button to add test data.
           </div>
         ) : (
@@ -203,13 +203,13 @@ export function LeaderboardTab() {
             {visible.map((user, i) => (
               <div
                 key={user.id}
-                className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-800/60 last:border-0 hover:bg-neutral-800/40 cursor-default transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(147,197,253,0.06)] last:border-0 hover:bg-[rgba(147,197,253,0.04)] cursor-default transition-colors"
                 onMouseEnter={(e) => handleMouseEnter(user, e)}
                 onMouseLeave={handleMouseLeave}
               >
                 <span className="w-6 text-center font-bold text-sm">
                   {i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (
-                    <span className="text-neutral-600">{i + 1}</span>
+                    <span className="text-[#3D4A5C]">{i + 1}</span>
                   )}
                 </span>
 
@@ -217,20 +217,20 @@ export function LeaderboardTab() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={user.image} alt={user.name} className="w-7 h-7 rounded-full flex-shrink-0" />
                 ) : (
-                  <div className="w-7 h-7 rounded-full bg-neutral-700 flex items-center justify-center text-neutral-300 text-xs font-semibold flex-shrink-0">
+                  <div className="w-7 h-7 rounded-full bg-[#1C2535] flex items-center justify-center text-[#B0BDD0] text-xs font-semibold flex-shrink-0">
                     {user.name[0]?.toUpperCase() ?? "?"}
                   </div>
                 )}
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-neutral-200 text-sm font-medium truncate">{user.name}</div>
+                  <div className="text-[#DDE4F0] text-sm font-medium truncate">{user.name}</div>
                   {user.username && (
-                    <div className="text-neutral-600 text-xs truncate">@{user.username}</div>
+                    <div className="text-[#3D4A5C] text-xs truncate">@{user.username}</div>
                   )}
                 </div>
 
                 <div className="text-right flex-shrink-0">
-                  <div className="text-green-400 text-sm font-semibold">{user.score} pts</div>
+                  <div className="text-[#7DD3FC] text-sm font-semibold">{user.score} pts</div>
                 </div>
               </div>
             ))}
@@ -238,7 +238,7 @@ export function LeaderboardTab() {
             {users.length > 5 && (
               <button
                 onClick={() => setExpanded(!expanded)}
-                className="w-full flex items-center justify-center gap-1 py-2 text-xs text-neutral-500 hover:text-neutral-300 transition-colors border-t border-neutral-800"
+                className="w-full flex items-center justify-center gap-1 py-2 text-xs text-[#5C6A82] hover:text-[#B0BDD0] transition-colors border-t border-[rgba(147,197,253,0.09)]"
               >
                 {expanded
                   ? <><ChevronUp size={12} /> Show less</>
@@ -288,19 +288,19 @@ export function RecordingsTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-neutral-800 bg-neutral-900/60">
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-neutral-800">
-          <Music size={14} className="text-green-400" />
-          <span className="text-sm font-semibold text-neutral-200">Recent Recordings</span>
-          <span className="ml-auto text-xs text-neutral-600">latest 10</span>
+      <div className="rounded-xl border border-[rgba(147,197,253,0.09)] bg-[#0B0E18]">
+        <div className="flex items-center gap-2 px-4 py-3 border-b border-[rgba(147,197,253,0.09)]">
+          <Music size={14} className="text-[#7DD3FC]" />
+          <span className="text-sm font-semibold text-[#DDE4F0]">Recent Recordings</span>
+          <span className="ml-auto text-xs text-[#3D4A5C]">latest 10</span>
         </div>
 
         {loading ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={16} className="animate-spin text-neutral-500" />
+            <Loader2 size={16} className="animate-spin text-[#5C6A82]" />
           </div>
         ) : uploads.length === 0 ? (
-          <div className="text-center text-neutral-600 text-xs py-10">
+          <div className="text-center text-[#3D4A5C] text-xs py-10">
             No recordings yet — go to Leaderboard and seed some data.
           </div>
         ) : (
@@ -309,7 +309,7 @@ export function RecordingsTab() {
             return (
               <div
                 key={upload.id}
-                className="flex items-center gap-3 px-4 py-2.5 border-b border-neutral-800/60 last:border-0 hover:bg-neutral-800/40 cursor-pointer transition-colors"
+                className="flex items-center gap-3 px-4 py-2.5 border-b border-[rgba(147,197,253,0.06)] last:border-0 hover:bg-[rgba(147,197,253,0.04)] cursor-pointer transition-colors"
                 onMouseEnter={(e) => handleMouseEnter(upload, e)}
                 onMouseLeave={handleMouseLeave}
                 onClick={() => handleClick(upload)}
@@ -317,13 +317,13 @@ export function RecordingsTab() {
                 <span className="text-base w-5 text-center flex-shrink-0">{emoji}</span>
 
                 <div className="flex-1 min-w-0">
-                  <div className="text-neutral-200 text-sm font-medium truncate">{upload.title}</div>
-                  <div className="text-neutral-600 text-xs truncate">
+                  <div className="text-[#DDE4F0] text-sm font-medium truncate">{upload.title}</div>
+                  <div className="text-[#3D4A5C] text-xs truncate">
                     {upload.locationLabel ?? "Unknown location"} · {timeAgo(upload.createdAt)}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 text-xs text-neutral-500 flex-shrink-0">
+                <div className="flex items-center gap-3 text-xs text-[#5C6A82] flex-shrink-0">
                   <span>❤️ {upload.likeCount}</span>
                   <span>▶ {upload.listenCount}</span>
                 </div>
@@ -363,16 +363,16 @@ function SeedPanel() {
   };
 
   return (
-    <div className="rounded-xl border border-neutral-800 bg-neutral-900/40 px-4 py-3 flex items-center gap-3">
-      <Sprout size={14} className="text-green-500 flex-shrink-0" />
+    <div className="rounded-xl border border-[rgba(147,197,253,0.09)] bg-[#0B0E18] px-4 py-3 flex items-center gap-3">
+      <Sprout size={14} className="text-[#93C5FD] flex-shrink-0" />
       <div className="flex-1">
-        <div className="text-xs font-medium text-neutral-400">Seed test data</div>
-        <div className="text-xs text-neutral-600">Inserts 15 realistic Melbourne recordings under your account</div>
+        <div className="text-xs font-medium text-[#5C6A82]">Seed test data</div>
+        <div className="text-xs text-[#3D4A5C]">Inserts 15 realistic Melbourne recordings under your account</div>
       </div>
       <button
         onClick={handleSeed}
         disabled={status === "loading" || status === "done" || !session?.user?.id}
-        className="text-xs px-3 py-1.5 rounded-lg border border-neutral-700 text-neutral-300 hover:bg-neutral-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
+        className="text-xs px-3 py-1.5 rounded-lg border border-[rgba(147,197,253,0.12)] text-[#B0BDD0] hover:bg-[#0F1422] disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center gap-1.5"
       >
         {status === "loading" && <Loader2 size={10} className="animate-spin" />}
         {status === "done"

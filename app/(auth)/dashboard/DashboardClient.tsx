@@ -4,22 +4,22 @@ import { useState } from "react";
 import { PixelCanvas } from "@/components/pixel-canvas";
 import { LeaderboardTab, RecordingsTab } from "./SocialTab";
 
-type Tab = "soundsoil" | "leaderboard" | "recordings";
+type Tab = "soundscape" | "leaderboard" | "recordings";
 
 export function DashboardClient() {
-  const [activeTab, setActiveTab] = useState<Tab>("soundsoil");
+  const [activeTab, setActiveTab] = useState<Tab>("soundscape");
 
   return (
     <div className="space-y-3">
-      {/* Chrome-style tab bar */}
-      <div className="flex items-end gap-0.5 border-b border-neutral-800">
-        <TabButton label="SoundSoil" active={activeTab === "soundsoil"} onClick={() => setActiveTab("soundsoil")} />
+      {/* Tab bar */}
+      <div className="flex items-end gap-0.5 border-b border-[rgba(139,92,246,0.09)]">
+        <TabButton label="SoundScape" active={activeTab === "soundscape"} onClick={() => setActiveTab("soundscape")} />
         <TabButton label="Leaderboard" active={activeTab === "leaderboard"} onClick={() => setActiveTab("leaderboard")} />
         <TabButton label="Recordings" active={activeTab === "recordings"} onClick={() => setActiveTab("recordings")} />
       </div>
 
       {/* Tab content */}
-      {activeTab === "soundsoil" && (
+      {activeTab === "soundscape" && (
         <div className="space-y-1">
           <span className="text-xs text-neutral-500 italic">Listen to the Earth. Watch it Grow.</span>
           <PixelCanvas />
@@ -47,8 +47,8 @@ function TabButton({
         px-4 py-1.5 text-sm font-medium rounded-t-md border border-b-0 transition-colors
         ${
           active
-            ? "bg-neutral-900 border-neutral-700 text-neutral-100"
-            : "bg-transparent border-transparent text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/40"
+            ? "bg-[#0D1117] border-[rgba(139,92,246,0.12)] text-[#F1F5F9]"
+            : "bg-transparent border-transparent text-[#6B7280] hover:text-[#8B5CF6] hover:bg-[rgba(139,92,246,0.05)]"
         }
       `}
     >

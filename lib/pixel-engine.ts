@@ -57,55 +57,55 @@ interface Palette {
 }
 
 const P_LUSH: Palette = {
-  skyTop: '#1a6db5',
-  skyBottom: '#6ab4e8',
-  grass: '#4CAF50',
-  grassDark: '#2E7D32',
-  dirt: '#6D4C41',
-  stone: '#546E7A',
-  leafA: '#2E7D32',
-  leafB: '#1B5E20',
-  leafC: '#43A047',
-  trunk: '#4E342E',
+  skyTop: '#3A7EC8',    // bright mid-day blue
+  skyBottom: '#8EC8F0', // soft horizon blue
+  grass: '#6B7C3A',     // muted olive — not #4CAF50, more natural
+  grassDark: '#4E5C28', // deeper olive
+  dirt: '#9B7B52',      // warm sandy brown
+  stone: '#8A9BAA',     // cool stone
+  leafA: '#4A6B2A',     // deep olive foliage
+  leafB: '#3A5520',     // darker olive
+  leafC: '#5C7A35',     // olive highlight
+  trunk: '#6B4423',     // warm brown trunk
 };
 
 const P_MODERATE: Palette = {
-  skyTop: '#3d85c8',
-  skyBottom: '#8ec6e8',
-  grass: '#7CB342',
-  grassDark: '#558B2F',
-  dirt: '#795548',
-  stone: '#607D8B',
-  leafA: '#558B2F',
-  leafB: '#33691E',
-  leafC: '#8BC34A',
-  trunk: '#4E342E',
+  skyTop: '#5B8FC0',    // slightly hazier blue
+  skyBottom: '#A0C8E0', // pale hazy horizon
+  grass: '#7A8A4A',     // dusty sage
+  grassDark: '#5A6835', // deeper sage
+  dirt: '#8B7050',      // warm earth
+  stone: '#8A9CAA',     // grey stone
+  leafA: '#5A6A35',     // muted sage leaf
+  leafB: '#455228',     // dark sage
+  leafC: '#6A7A40',     // sage highlight
+  trunk: '#6B4423',     // brown trunk
 };
 
 const P_DEGRADED: Palette = {
-  skyTop: '#546E7A',
-  skyBottom: '#90A4AE',
-  grass: '#8D6E63',
-  grassDark: '#6D4C41',
-  dirt: '#5D4037',
-  stone: '#546E7A',
-  leafA: '#827717',
-  leafB: '#5D4037',
-  leafC: '#9E9D24',
-  trunk: '#4E342E',
+  skyTop: '#8A9BAA',    // overcast grey sky
+  skyBottom: '#B8C8D0', // pale grey horizon
+  grass: '#8A7A5A',     // dry straw/dust
+  grassDark: '#6A5C40', // darker dust
+  dirt: '#8B6B48',      // dry cracked earth
+  stone: '#7A8A90',     // worn stone
+  leafA: '#7A7040',     // dying olive leaf
+  leafB: '#5C5530',     // dry leaf
+  leafC: '#8A7A48',     // dust highlight
+  trunk: '#5C4030',     // dry trunk
 };
 
 const P_DEAD: Palette = {
-  skyTop: '#263238',
-  skyBottom: '#455A64',
-  grass: '#4E342E',
-  grassDark: '#3E2723',
-  dirt: '#3E2723',
-  stone: '#37474F',
-  leafA: '#4E342E',
-  leafB: '#3E2723',
-  leafC: '#5D4037',
-  trunk: '#37474F',
+  skyTop: '#6A7A84',    // ashen overcast sky
+  skyBottom: '#9AAAB4', // pale ashen horizon
+  grass: '#6A6050',     // ash/dust ground
+  grassDark: '#504840', // dark ash
+  dirt: '#604C3C',      // dark dry earth
+  stone: '#686878',     // dark stone
+  leafA: '#6A6050',     // dead leaf
+  leafB: '#504840',     // dead dark leaf
+  leafC: '#706858',     // dead highlight
+  trunk: '#484038',     // dead trunk
 };
 
 function lerpPalette(a: Palette, b: Palette, t: number): Palette {
@@ -172,10 +172,10 @@ const CW = GW * T;   // 800
 const CH = GH * T;   // 400
 
 const LEAF_SETS = [
-  ['#2E7D32', '#1B5E20', '#43A047'],
-  ['#33691E', '#1B5E20', '#558B2F'],
-  ['#1E8449', '#145A32', '#27AE60'],
-  ['#2d6a4f', '#1b4332', '#40916c'],
+  ['#4A6B2A', '#3A5520', '#5C7A35'],
+  ['#506030', '#3C4A22', '#617240'],
+  ['#456028', '#34481E', '#587035'],
+  ['#4E6832', '#3A5025', '#607840'],
 ] as const;
 
 const FLOWER_COLORS  = ['#e83535', '#f5c518', '#8b35e8', '#ff69b4', '#FF6B6B', '#FFD700'];
@@ -325,6 +325,35 @@ export class PixelWorldEngine {
     if (this.cur.silence > 0.55) {
       ctx.fillStyle = `rgba(160,190,210,${(this.cur.silence - 0.55) * 0.22})`;
       ctx.fillRect(0, 0, CW, GROUND * T);
+    }
+
+    // Sun — visible when rain/wind is low
+    const sunAlpha = Math.max(0, 1 - this.cur.rain * 4);
+    if (sunAlpha > 0.01) {
+      const sx = CW - 110;
+      const sy = 38;
+      const pulse = 1 + Math.sin(this.frame * 0.03) * 0.08;
+      // Outer glow
+      ctx.fillStyle = `rgba(255,220,80,${sunAlpha * 0.18 * pulse})`;
+      ctx.fillRect(sx - 20, sy - 20, 68, 68);
+      // Mid glow
+      ctx.fillStyle = `rgba(255,230,100,${sunAlpha * 0.30 * pulse})`;
+      ctx.fillRect(sx - 12, sy - 12, 52, 52);
+      // Sun body
+      ctx.fillStyle = `rgba(255,235,60,${sunAlpha})`;
+      ctx.fillRect(sx, sy, 28, 28);
+      ctx.fillStyle = `rgba(255,248,120,${sunAlpha})`;
+      ctx.fillRect(sx + 4, sy + 2, 16, 10);
+      // Rays (pixel style)
+      ctx.fillStyle = `rgba(255,220,50,${sunAlpha * 0.85})`;
+      ctx.fillRect(sx + 12, sy - 10, 4, 8);   // top
+      ctx.fillRect(sx + 12, sy + 30, 4, 8);   // bottom
+      ctx.fillRect(sx - 10, sy + 12, 8, 4);   // left
+      ctx.fillRect(sx + 30, sy + 12, 8, 4);   // right
+      ctx.fillRect(sx - 7,  sy - 7,  5, 5);   // top-left
+      ctx.fillRect(sx + 30, sy - 7,  5, 5);   // top-right
+      ctx.fillRect(sx - 7,  sy + 30, 5, 5);   // bottom-left
+      ctx.fillRect(sx + 30, sy + 30, 5, 5);   // bottom-right
     }
 
     // Clouds
