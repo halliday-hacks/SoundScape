@@ -1388,6 +1388,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
                   {/* Meta form */}
                   <MetaForm
+                    title={title}
+                    setTitle={setTitle}
                     desc={description}
                     setDesc={setDescription}
                     dc={dominantClass}
