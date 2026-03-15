@@ -23,6 +23,7 @@ import {
   ScrubBarThumb,
   ScrubBarTimeLabel,
 } from "@/components/ui/scrub-bar";
+import { Mic } from "lucide-react";
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 type SoundType =
@@ -928,11 +929,10 @@ export default function SoundMapInner() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 20,
             transition: "all .15s",
           }}
         >
-          🎙
+          <Mic size={20} />
         </button>
       </div>
 
@@ -1056,7 +1056,7 @@ export default function SoundMapInner() {
               {selected.storageId ? (
                 <AudioPlayerConvex
                   storageId={selected.storageId as Id<"_storage">}
-                  color={S.color}
+                  color="#60a5fa"
                   duration={selected.duration}
                   onFirstPlay={selected.uploadId ? () => {
                     incrementListenMutation({ uploadId: selected.uploadId! as Id<"uploads"> });
@@ -1064,11 +1064,11 @@ export default function SoundMapInner() {
                 />
               ) : (
                 <>
-                  <Waveform color={S.color} />
+                  <Waveform color="#60a5fa" />
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12 }}>
                     <button
                       onClick={() => setPlaying((p) => !p)}
-                      style={{ width: 36, height: 36, background: S.color, border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}
+                      style={{ width: 36, height: 36, background: "#60a5fa", border: "none", borderRadius: "50%", color: "#fff", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}
                     >
                       {playing ? "⏸" : "▶"}
                     </button>
@@ -1076,7 +1076,7 @@ export default function SoundMapInner() {
                       duration={parseDuration(selected.duration)}
                       value={0}
                       className="flex-1 gap-2"
-                      style={{ "--soundmap-pin-color": S.color } as React.CSSProperties}
+                      style={{ "--soundmap-pin-color": "#60a5fa" } as React.CSSProperties}
                     >
                       <ScrubBarTimeLabel time={0} className="text-[10px] w-7 shrink-0" style={{ color: "rgba(255,255,255,.45)" }} />
                       <ScrubBarTrack className="h-1.5 bg-white/[0.08]">
