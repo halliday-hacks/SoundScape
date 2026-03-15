@@ -14,28 +14,28 @@ export function DashboardClient() {
   return (
     <div className="space-y-3">
       {/* Tab bar */}
-      <div className="flex items-end gap-0.5 border-b border-[rgba(139,92,246,0.09)]">
-        <TabButton label="SoundScape" active={activeTab === "soundscape"} onClick={() => setActiveTab("soundscape")} />
-        <TabButton label="Leaderboard" active={activeTab === "leaderboard"} onClick={() => setActiveTab("leaderboard")} />
-        <TabButton label="Recordings" active={activeTab === "recordings"} onClick={() => setActiveTab("recordings")} />
+      <div className="flex items-end justify-between border-b border-[rgba(139,92,246,0.09)]">
+        <div className="flex items-end gap-0.5">
+          <TabButton label="SoundScape" active={activeTab === "soundscape"} onClick={() => setActiveTab("soundscape")} />
+          <TabButton label="Leaderboard" active={activeTab === "leaderboard"} onClick={() => setActiveTab("leaderboard")} />
+          <TabButton label="Recordings" active={activeTab === "recordings"} onClick={() => setActiveTab("recordings")} />
+        </div>
+        <Link
+          href="/sound-map"
+          className="mb-1 flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold text-white/90 tracking-wide transition-opacity hover:opacity-80"
+          style={{
+            border: "1px solid transparent",
+            background: "linear-gradient(#0D1117,#0D1117) padding-box, linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd, #3b82f6) border-box",
+          }}
+        >
+          <Map size={14} />
+          Sound Map →
+        </Link>
       </div>
 
       {/* Tab content */}
       {activeTab === "soundscape" && (
         <div className="space-y-1">
-          <div className="flex justify-end">
-            <Link
-              href="/sound-map"
-              className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold text-white/90 tracking-wide transition-opacity hover:opacity-80"
-              style={{
-                border: "1px solid transparent",
-                background: "linear-gradient(#0D1117,#0D1117) padding-box, linear-gradient(135deg, #3b82f6, #60a5fa, #93c5fd, #3b82f6) border-box",
-              }}
-            >
-              <Map size={14} />
-              Sound Map →
-            </Link>
-          </div>
           <PixelCanvas />
         </div>
       )}
