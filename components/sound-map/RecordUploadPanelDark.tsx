@@ -688,7 +688,6 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       setAudioUrl(null);
     }
     setSelectedFile(null);
-    setLocation(null);
     setPlaying(false);
     setPlayerTime(0);
     setPlayerDuration(0);
