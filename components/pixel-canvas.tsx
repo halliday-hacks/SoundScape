@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PixelWorldEngine, type Classification } from "@/lib/pixel-engine";
 
@@ -118,15 +119,33 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
         </div>
 
 
-        {/* Bottom-right: demo label */}
+        {/* Bottom-left: demo label */}
         {isDemoMode && (
           <div
-            className="absolute bottom-2 right-2 rounded-sm px-2 py-1 text-[#93C5FD] border border-[rgba(147,197,253,0.25)] bg-[rgba(147,197,253,0.08)]"
+            className="absolute bottom-2 left-2 rounded-sm px-2 py-1 text-[#93C5FD] border border-[rgba(147,197,253,0.25)] bg-[rgba(147,197,253,0.08)]"
             style={{ fontFamily: "var(--font-pixel)", fontSize: "7px" }}
           >
             DEMO
           </div>
         )}
+
+        {/* Bottom-right: Sound Map button with rainbow gradient border */}
+        <Link
+          href="/map"
+          className="absolute bottom-2 right-2 flex items-center gap-1 px-2.5 py-1 rounded-md text-white font-medium transition-opacity hover:opacity-90"
+          style={{
+            fontSize: "11px",
+            background: "linear-gradient(#07090E, #07090E) padding-box, linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc) border-box",
+            border: "1px solid transparent",
+            backdropFilter: "blur(4px)",
+            backgroundColor: "rgba(7,9,14,0.75)",
+          }}
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.8 }}>
+            <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" /><path d="M9 3v15" /><path d="M15 6v15" />
+          </svg>
+          Sound Map
+        </Link>
       </div>
 
       {/* ------------------------------------------------------------------ */}

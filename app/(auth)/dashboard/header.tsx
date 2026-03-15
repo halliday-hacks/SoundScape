@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { LogOut, Map, Menu, Settings } from "lucide-react";
+import { LogOut, Menu, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { authClient } from "@/lib/auth-client";
@@ -73,19 +73,6 @@ export const Header = () => {
 
       {/* Right: Sound Map + user + menu */}
       <div className="flex items-center gap-3 ml-auto">
-        {/* Sound Map — gradient border pill */}
-        <Link
-          href="/map"
-          className="relative flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium text-[#93C5FD] rounded-full transition-colors hover:text-white"
-          style={{
-            background: "linear-gradient(#07090E, #07090E) padding-box, linear-gradient(135deg, #93C5FD, #A5B4FC, #818CF8) border-box",
-            border: "1px solid transparent",
-          }}
-        >
-          <Map size={14} />
-          Sound Map
-        </Link>
-
         {/* User + hamburger */}
         <div className="flex items-center gap-2 pl-3 border-l border-[rgba(147,197,253,0.09)]">
           <UserProfile />
