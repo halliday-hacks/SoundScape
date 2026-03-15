@@ -327,6 +327,35 @@ export class PixelWorldEngine {
       ctx.fillRect(0, 0, CW, GROUND * T);
     }
 
+    // Sun — visible when rain/wind is low
+    const sunAlpha = Math.max(0, 1 - this.cur.rain * 4);
+    if (sunAlpha > 0.01) {
+      const sx = CW - 110;
+      const sy = 38;
+      const pulse = 1 + Math.sin(this.frame * 0.03) * 0.08;
+      // Outer glow
+      ctx.fillStyle = `rgba(255,220,80,${sunAlpha * 0.18 * pulse})`;
+      ctx.fillRect(sx - 20, sy - 20, 68, 68);
+      // Mid glow
+      ctx.fillStyle = `rgba(255,230,100,${sunAlpha * 0.30 * pulse})`;
+      ctx.fillRect(sx - 12, sy - 12, 52, 52);
+      // Sun body
+      ctx.fillStyle = `rgba(255,235,60,${sunAlpha})`;
+      ctx.fillRect(sx, sy, 28, 28);
+      ctx.fillStyle = `rgba(255,248,120,${sunAlpha})`;
+      ctx.fillRect(sx + 4, sy + 2, 16, 10);
+      // Rays (pixel style)
+      ctx.fillStyle = `rgba(255,220,50,${sunAlpha * 0.85})`;
+      ctx.fillRect(sx + 12, sy - 10, 4, 8);   // top
+      ctx.fillRect(sx + 12, sy + 30, 4, 8);   // bottom
+      ctx.fillRect(sx - 10, sy + 12, 8, 4);   // left
+      ctx.fillRect(sx + 30, sy + 12, 8, 4);   // right
+      ctx.fillRect(sx - 7,  sy - 7,  5, 5);   // top-left
+      ctx.fillRect(sx + 30, sy - 7,  5, 5);   // top-right
+      ctx.fillRect(sx - 7,  sy + 30, 5, 5);   // bottom-left
+      ctx.fillRect(sx + 30, sy + 30, 5, 5);   // bottom-right
+    }
+
     // Clouds
     ctx.fillStyle = `rgba(255,255,255,${0.72 + this.cur.rain * 0.15})`;
     for (const c of this.clouds) this.drawCloud(c.x, c.y, c.w, c.h);

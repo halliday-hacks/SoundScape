@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { PixelWorldEngine, type Classification } from "@/lib/pixel-engine";
 
@@ -103,39 +102,8 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
           style={{ imageRendering: "pixelated", aspectRatio: "2 / 1" }}
         />
 
-        {/* Top-left: dominant class badge */}
-        <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/60 px-2 py-1 uppercase text-[#F1F5F9]"
-          style={{ fontFamily: "var(--font-pixel)", fontSize: "7px", letterSpacing: "0.05em" }}
-        >
-          <span
-            className="h-1.5 w-1.5 rounded-full animate-pulse shrink-0"
-            style={{
-              backgroundColor:
-                CAT_CONFIG.find((c) => c.key === active.dominantClass)?.color ?? "#475569",
-            }}
-          />
-          {active.dominantClass}
-        </div>
 
 
-        {/* Bottom-right: Sound Map button — rainbow gradient border */}
-        <Link
-          href="/map"
-          className="absolute bottom-3 right-3 flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
-          style={{
-            fontSize: "14px",
-            background: "linear-gradient(#080B14, #080B14) padding-box, linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc) border-box",
-            border: "1.5px solid transparent",
-            backdropFilter: "blur(6px)",
-            zIndex: 10,
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3V6z" /><path d="M9 3v15" /><path d="M15 6v15" />
-          </svg>
-          Sound Map
-        </Link>
       </div>
 
       {/* ------------------------------------------------------------------ */}
@@ -146,9 +114,9 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
         {isDemoMode && (
           <div className="rounded-lg border border-[rgba(139,92,246,0.09)] bg-[#0D1117] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#6B7280]">
-                Demo — drag to simulate environment
+              <span className="h-1.5 w-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-white/60">
+                Live — drag to simulate environment
               </span>
             </div>
             <div className="grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2">

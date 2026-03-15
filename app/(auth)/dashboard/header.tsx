@@ -64,7 +64,7 @@ export const Header = () => {
       {/* Left: wordmark + tagline */}
       <div className="flex flex-col gap-1">
         <span className="wordmark text-2xl text-[#F1F5F9]">
-          Sound<span style={{ background: "linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Scape</span>
+          Sound<span style={{ color: "#60a5fa" }}>Scape</span>
         </span>
         <span className="text-[10px] text-[#6B7280] tracking-[0.2em] uppercase">
           Listen · Visualise · Map
