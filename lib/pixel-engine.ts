@@ -38,6 +38,23 @@ function lerpColor(a: string, b: string, t: number): string {
   return `rgb(${r},${g},${bl})`;
 }
 
+function colorToRgb(color: string): [number, number, number] {
+  if (color.startsWith('#')) return hexToRgb(color);
+  const match = color.match(/\d+/g);
+  if (match && match.length >= 3) {
+    return [Number(match[0]), Number(match[1]), Number(match[2])];
+  }
+  return [0, 0, 0];
+}
+
+function adjustBrightness(color: string, factor: number): string {
+  const [r, g, b] = colorToRgb(color);
+  const nr = Math.max(0, Math.min(255, Math.round(r * factor)));
+  const ng = Math.max(0, Math.min(255, Math.round(g * factor)));
+  const nb = Math.max(0, Math.min(255, Math.round(b * factor)));
+  return `rgb(${nr},${ng},${nb})`;
+}
+
 // ---------------------------------------------------------------------------
 // Colour palettes — 4 biodiversity tiers
 // ---------------------------------------------------------------------------
@@ -189,6 +206,7 @@ export class PixelWorldEngine {
   private ctx: CanvasRenderingContext2D;
   private rafId = 0;
   private frame = 0;
+  private groundTexture: HTMLImageElement | null = null;
 
   private trees: Tree[] = [];
   private flowers: Flower[] = [];
@@ -204,6 +222,7 @@ export class PixelWorldEngine {
     canvas.width  = CW;
     canvas.height = CH;
     this.ctx = canvas.getContext('2d')!;
+    this.ctx.imageSmoothingEnabled = false;
 
     const init: Classification = {
       bird: 0.35, insect: 0.25, traffic: 0,
@@ -214,8 +233,17 @@ export class PixelWorldEngine {
     this.tgt = { ...init };
     this.bioScore = init.biodiversityScore;
 
+    this.loadGroundTexture();
     this.initClouds();
     this.seedWorld();
+  }
+
+  private loadGroundTexture() {
+    const img = new Image();
+    img.src = '/images/ground.png';
+    img.onload = () => {
+      this.groundTexture = img;
+    };
   }
 
   private seedWorld() {
@@ -338,15 +366,42 @@ export class PixelWorldEngine {
     }
 
     // Underground
-    ctx.fillStyle = p.stone;
-    ctx.fillRect(0, (GROUND + 2) * T, CW, (GH - GROUND - 2) * T);
+    const startY = GROUND + 2;
+    const endY = GH;
+    const stoneOutline = '#0f1113';
+
+    // Draw background grout
+    ctx.fillStyle = stoneOutline;
+    ctx.fillRect(0, startY * T, CW, (endY - startY) * T);
+
+    if (this.groundTexture) {
+      ctx.drawImage(
+        this.groundTexture,
+        0,
+        0,
+        this.groundTexture.width,
+        this.groundTexture.height,
+        0,
+        startY * T,
+        CW,
+        (endY - startY) * T,
+      );
+    } else {
+      // Fallback while texture is loading
+      for (let gy = startY; gy < endY; gy++) {
+        for (let gx = 0; gx < GW; gx++) {
+          const variant = ((gx + gy) & 1) === 0 ? 1.08 : 0.92;
+          const stoneBase = adjustBrightness(p.stone, variant);
+          const stoneHighlight = adjustBrightness(stoneBase, 1.5);
+          const stoneShadow = adjustBrightness(stoneBase, 0.5);
+          this.drawStoneTileAt(gx, gy, stoneBase, stoneHighlight, stoneShadow);
+        }
+      }
+    }
+
+    // Dirt Layer
     ctx.fillStyle = p.dirt;
     ctx.fillRect(0, (GROUND + 1) * T, CW, T + 3);
-    ctx.fillStyle = p.stone;
-    for (let gx = 1; gx < GW; gx += 5) {
-      ctx.fillRect(gx * T + 5, (GROUND + 1) * T + 5, 3, 3);
-      ctx.fillRect(gx * T + 10, (GROUND + 2) * T + 8, 2, 2);
-    }
 
     // Grass
     const grassNow = this.cur.traffic > 0.5 ? lerpColor(p.grass, '#3E2723', (this.cur.traffic - 0.5) * 2) : p.grass;
@@ -460,6 +515,56 @@ export class PixelWorldEngine {
       ctx.fillStyle = `rgba(255,255,150,${a * 0.28})`;
       ctx.fillRect(Math.round(pp.x) - 2, Math.round(pp.y) - 2, 6, 6);
     }
+  }
+
+  private drawStoneTileAt(gx: number, gy: number, base: string, highlight: string, shadow: string) {
+    const ctx = this.ctx;
+    const x = gx * T;
+    const y = gy * T;
+    
+    // Top Left Stone
+    ctx.fillStyle = base;
+    ctx.fillRect(x, y, 7, 7);
+    ctx.fillStyle = highlight;
+    ctx.fillRect(x + 1, y + 1, 4, 2);
+    ctx.fillRect(x + 1, y + 1, 2, 4);
+    ctx.fillStyle = shadow;
+    ctx.fillRect(x + 4, y + 4, 3, 3);
+
+    // Top Right Stone
+    ctx.fillStyle = base;
+    ctx.fillRect(x + 9, y, 7, 7);
+    ctx.fillStyle = highlight;
+    ctx.fillRect(x + 10, y + 1, 4, 2);
+    ctx.fillRect(x + 13, y + 1, 2, 4);
+    ctx.fillStyle = shadow;
+    ctx.fillRect(x + 9, y + 4, 3, 3);
+    
+    // Bottom Left Stone
+    ctx.fillStyle = base;
+    ctx.fillRect(x, y + 9, 7, 7);
+    ctx.fillStyle = highlight;
+    ctx.fillRect(x + 1, y + 10, 4, 2);
+    ctx.fillRect(x + 1, y + 13, 2, 3);
+    ctx.fillStyle = shadow;
+    ctx.fillRect(x + 4, y + 9, 3, 3);
+
+    // Bottom Right Stone
+    ctx.fillStyle = base;
+    ctx.fillRect(x + 9, y + 9, 7, 7);
+    ctx.fillStyle = highlight;
+    ctx.fillRect(x + 10, y + 10, 4, 2);
+    ctx.fillRect(x + 13, y + 12, 2, 4);
+    ctx.fillStyle = shadow;
+    ctx.fillRect(x + 9, y + 9, 3, 3);
+
+    // Center Round Stone
+    ctx.fillStyle = shadow;
+    ctx.beginPath(); ctx.arc(x + 8, y + 8, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = base;
+    ctx.beginPath(); ctx.arc(x + 8, y + 8, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = highlight;
+    ctx.fillRect(x + 7, y + 7, 2, 2);
   }
 
   private drawCloud(x: number, y: number, w: number, h: number) {
