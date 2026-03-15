@@ -1885,10 +1885,11 @@ export default function SoundMapInner() {
 
   // Update map bounds when map moves
   useEffect(() => {
-    if (!mapRef.current) return;
+    const map = mapRef.current;
+    if (!map) return;
     
     const updateBounds = () => {
-      const bounds = mapRef.current!.getBounds();
+      const bounds = map.getBounds();
       setMapBounds({
         north: bounds.getNorth(),
         south: bounds.getSouth(),
@@ -1901,14 +1902,12 @@ export default function SoundMapInner() {
     updateBounds();
     
     // Listen for map movements
-    mapRef.current.on("moveend", updateBounds);
-    mapRef.current.on("zoomend", updateBounds);
+    map.on("moveend", updateBounds);
+    map.on("zoomend", updateBounds);
     
     return () => {
-      if (mapRef.current) {
-        mapRef.current.off("moveend", updateBounds);
-        mapRef.current.off("zoomend", updateBounds);
-      }
+      map.off("moveend", updateBounds);
+      map.off("zoomend", updateBounds);
     };
   }, [isMapReady]);
 
