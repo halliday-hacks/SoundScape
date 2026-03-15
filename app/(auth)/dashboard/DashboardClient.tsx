@@ -19,12 +19,7 @@ export function DashboardClient() {
       </div>
 
       {/* Tab content */}
-      {activeTab === "soundscape" && (
-        <div className="space-y-1">
-          <span className="text-xs text-[#5C6A82] tracking-widest uppercase">Listen · Visualise · Map</span>
-          <PixelCanvas />
-        </div>
-      )}
+      {activeTab === "soundscape" && <PixelCanvas />}
       {activeTab === "leaderboard" && <LeaderboardTab />}
       {activeTab === "recordings" && <RecordingsTab />}
     </div>

@@ -46,8 +46,18 @@ export const Header = () => {
   };
   return (
     <header className="flex items-center justify-between py-1">
-      <UserProfile />
-      <div className="flex items-center gap-1">
+      {/* Left: wordmark + tagline */}
+      <div className="flex flex-col gap-0.5">
+        <span className="wordmark text-xl text-[#DDE4F0]">
+          Sound<span className="text-[#93C5FD]">Scape</span>
+        </span>
+        <span className="text-[11px] text-[#5C6A82] tracking-widest uppercase">
+          Listen · Visualise · Map
+        </span>
+      </div>
+
+      {/* Right: nav + user */}
+      <div className="flex items-center gap-1 ml-auto">
         <Button
           variant="ghost"
           size="sm"
@@ -79,6 +89,9 @@ export const Header = () => {
           <LogOut size={15} />
           Sign out
         </Button>
+        <div className="ml-3 pl-3 border-l border-[rgba(147,197,253,0.09)]">
+          <UserProfile />
+        </div>
       </div>
     </header>
   );
