@@ -21,7 +21,6 @@ export function DashboardClient() {
       {/* Tab content */}
       {activeTab === "soundscape" && (
         <div className="space-y-1">
-          <span className="text-xs text-neutral-500 italic">Listen to the Earth. Watch it Grow.</span>
           <PixelCanvas />
         </div>
       )}
