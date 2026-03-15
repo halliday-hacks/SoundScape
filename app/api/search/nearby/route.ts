@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/$/, "");
+const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/+$/, "");
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
 
 /**
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    const res = await fetch(`${ELASTIC_URL}/soundsoil-uploads/_search`, {
+    const res = await fetch(`${ELASTIC_URL}/soundscape-uploads/_search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

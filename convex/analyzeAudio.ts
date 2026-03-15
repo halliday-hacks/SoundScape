@@ -11,7 +11,7 @@
  *
  * Environment variables (set via `npx convex env set`):
  *   YAMNET_MODEL_URL — Full URL to the TF.js model.json
- *                      e.g. https://soundsoil.vercel.app/yamnet-model/model.json
+ *                      e.g. https://soundscape.vercel.app/yamnet-model/model.json
  */
 
 import { internalAction } from "./_generated/server";

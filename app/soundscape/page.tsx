@@ -12,7 +12,7 @@ interface ProgressState {
   frameProgress?: number;
 }
 
-export default function SoundSoilPage() {
+export default function SoundScapePage() {
   const [dragging, setDragging] = useState(false);
   const [progress, setProgress] = useState<ProgressState | null>(null);
   const [gif, setGif] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function SoundSoilPage() {
     form.append("audio", file);
     form.append("mode", mode);
 
-    const res = await fetch("/api/soundsoil", { method: "POST", body: form });
+    const res = await fetch("/api/soundscape", { method: "POST", body: form });
     if (!res.body) {
       setError("No response stream");
       return;
@@ -123,7 +123,7 @@ export default function SoundSoilPage() {
   return (
     <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6 gap-8">
       <div className="text-center space-y-1">
-        <h1 className="text-3xl font-bold tracking-tight">SoundSoil</h1>
+        <h1 className="text-3xl font-bold tracking-tight">SoundScape</h1>
         <p className="text-sm text-zinc-500">Upload audio → visual art</p>
       </div>
 
@@ -272,7 +272,7 @@ export default function SoundSoilPage() {
             <a
               href={result}
               download={
-                isVideo ? `soundsoil-${stem}.mp4` : `soundsoil-${stem}.gif`
+                isVideo ? `soundscape-${stem}.mp4` : `soundscape-${stem}.gif`
               }
               className="flex-1 text-center text-sm py-2 rounded-lg bg-white text-black font-medium hover:bg-zinc-200 transition-colors"
             >

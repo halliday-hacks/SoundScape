@@ -9,7 +9,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { GoogleGenAI } from "@google/genai";
 
 function loadSkillContent(): string {
-  const skillPath = path.resolve("soundsoil-pixelart.skill");
+  const skillPath = path.resolve("soundscape-pixelart.skill");
   const extract = (entry: string) =>
     execSync(`unzip -p "${skillPath}" "*/${entry}"`, { encoding: "utf8" });
   return [
@@ -323,7 +323,7 @@ export async function POST(req: NextRequest) {
         });
 
         const arrayBuffer = await file.arrayBuffer();
-        const tmpWav = path.join(os.tmpdir(), `soundsoil-${Date.now()}.wav`);
+        const tmpWav = path.join(os.tmpdir(), `soundscape-${Date.now()}.wav`);
         fs.writeFileSync(tmpWav, Buffer.from(arrayBuffer));
 
         let result: YAMNetResult;

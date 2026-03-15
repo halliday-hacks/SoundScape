@@ -9,6 +9,7 @@ export function ConvexTest() {
   const [sessionId] = useState("test-session-001");
   const [log, setLog] = useState<string[]>([]);
 
+  const generateUploadUrl = useMutation(api.uploads.generateUploadUrl);
   const createUpload = useMutation(api.uploads.create);
   const createEvent = useMutation(api.classificationEvents.create);
   const incrementListenCount = useMutation(api.uploads.incrementListenCount);
@@ -25,15 +26,23 @@ export function ConvexTest() {
   const handleSeedData = async () => {
     try {
       // Create an upload
+      // storageId is required — generate a real upload URL first for production use
+      const uploadUrl = await generateUploadUrl();
+      const dummyBlob = new Blob(["test"], { type: "audio/wav" });
+      const uploadRes = await fetch(uploadUrl, { method: "POST", headers: { "Content-Type": "audio/wav" }, body: dummyBlob });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const { storageId } = await uploadRes.json();
+
       const id = await createUpload({
         userId: "test-user-001",
+        storageId,
         title: "Fitzroy Gardens Dawn Chorus",
         description: "Beautiful birdsong recorded at dawn in Fitzroy Gardens",
         locationLabel: "Fitzroy Gardens, Melbourne",
         lat: -37.8136,
         lon: 144.9794,
         biodiversityScore: 82,
-        dominantClass: "bird",
+        dominantClass: "birds",
         durationSeconds: 180,
         tags: ["birdsong", "melbourne", "dawn"],
       });
@@ -42,9 +51,9 @@ export function ConvexTest() {
 
       // Simulate a few classification events
       const events = [
-        { bird: 0.82, insect: 0.05, traffic: 0.08, wind: 0.03, construction: 0.0, silence: 0.02, dominantClass: "bird", confidence: 0.82, biodiversityScore: 74, speciesCommon: "Laughing Kookaburra", species: "Dacelo novaeguineae" },
-        { bird: 0.71, insect: 0.12, traffic: 0.04, wind: 0.10, construction: 0.0, silence: 0.03, dominantClass: "bird", confidence: 0.71, biodiversityScore: 68, speciesCommon: "Australian Magpie", species: "Gymnorhina tibicen" },
-        { bird: 0.15, insect: 0.05, traffic: 0.72, wind: 0.06, construction: 0.0, silence: 0.02, dominantClass: "traffic", confidence: 0.72, biodiversityScore: 22 },
+        { birds: 0.82, insects: 0.05, rain: 0.03, traffic: 0.08, music: 0.0, construction: 0.0, silence: 0.02, dominantClass: "birds", confidence: 0.82, biodiversityScore: 74, speciesCommon: "Laughing Kookaburra", species: "Dacelo novaeguineae" },
+        { birds: 0.71, insects: 0.12, rain: 0.10, traffic: 0.04, music: 0.0, construction: 0.0, silence: 0.03, dominantClass: "birds", confidence: 0.71, biodiversityScore: 68, speciesCommon: "Australian Magpie", species: "Gymnorhina tibicen" },
+        { birds: 0.15, insects: 0.05, rain: 0.06, traffic: 0.72, music: 0.0, construction: 0.0, silence: 0.02, dominantClass: "traffic", confidence: 0.72, biodiversityScore: 22 },
       ];
 
       for (const evt of events) {
@@ -126,7 +135,7 @@ export function ConvexTest() {
                 {e.speciesCommon && <span className="text-muted-foreground"> · {e.speciesCommon}</span>}
               </div>
               <div className="text-xs text-muted-foreground">
-                confidence: {(e.confidence * 100).toFixed(0)}% · bio: {e.biodiversityScore} · bird: {(e.bird * 100).toFixed(0)}% traffic: {(e.traffic * 100).toFixed(0)}%
+                confidence: {(e.confidence * 100).toFixed(0)}% · bio: {e.biodiversityScore} · birds: {((e.birds ?? 0) * 100).toFixed(0)}% traffic: {((e.traffic ?? 0) * 100).toFixed(0)}%
               </div>
             </div>
           ))}

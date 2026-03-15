@@ -1,6 +1,6 @@
-SoundSoil - Complete Project Context (v5 - FINAL)
+SoundScape - Complete Project Context (v5 - FINAL)
 
-Purpose of this document: This is a comprehensive context dump for the SoundSoil hackathon project. Paste this into a new conversation to give full context on the project vision, architecture, technical decisions, prize strategy, and build plan. Everything needed to help build, debug, design, or pitch SoundSoil is here.
+Purpose of this document: This is a comprehensive context dump for the SoundScape hackathon project. Paste this into a new conversation to give full context on the project vision, architecture, technical decisions, prize strategy, and build plan. Everything needed to help build, debug, design, or pitch SoundScape is here.
 
 Tech Stack: Next.js (Vercel) + Convex (real-time backend + file storage) + Elasticsearch (search/geo/analytics) + BetterAuth (Google OAuth) + TensorFlow.js (on-device ML) + HTML Canvas (pixel art rendering)
 
@@ -50,7 +50,7 @@ Future Vision
 
 1. Project Overview
 
-Name: SoundSoil
+Name: SoundScape
 
 Tagline: Listen to the Earth. Watch it Grow.
 
@@ -58,7 +58,7 @@ Event: UNIHACK 2026 - March 13-15, 2026 (48-hour hackathon)
 
 Team size: 4-6 people, full-stack balanced
 
-One-liner: SoundSoil is a real-time environmental soundscape platform that turns neighbourhood audio into a living, pixelated game world - and lets communities explore and share the sounds of any place on earth.
+One-liner: SoundScape is a real-time environmental soundscape platform that turns neighbourhood audio into a living, pixelated game world - and lets communities explore and share the sounds of any place on earth.
 
 What it does: Users place their device outdoors. The app continuously classifies ambient audio identifying bird species, insect activity, traffic density, construction noise, and weather sounds using on-device machine learning. This data feeds a dynamic pixel art landscape rendered like a Terraria/Stardew Valley biome: birdsong grows pixelated trees and spawns animated birds, insects bloom flowers and butterflies, traffic turns the world grey and cracked, rain makes pixel puddles. All data syncs in real-time via Convex and is indexed in Elasticsearch for powerful search and geo-queries. Community members upload acoustic recordings to a world map (SoundCloud meets Google Maps for the planet).
 
@@ -465,7 +465,7 @@ export const syncClassificationEvent = action({
 args: { id: v.id("events") },
 handler: async (ctx, args) => {
 // Logic to sync Convex events to Elasticsearch
-// fetch(`${process.env.ELASTIC_URL}/soundsoil-events/_doc/${args.id}`, ... )
+// fetch(`${process.env.ELASTIC_URL}/soundscape-events/_doc/${args.id}`, ... )
 }
 });
 
@@ -473,7 +473,7 @@ export const syncUploadEvent = action({
 args: { id: v.id("uploads") },
 handler: async (ctx, args) => {
 // Logic to sync Convex uploads to Elasticsearch
-// fetch(`${process.env.ELASTIC_URL}/soundsoil-uploads/_doc/${args.id}`, ... )
+// fetch(`${process.env.ELASTIC_URL}/soundscape-uploads/_doc/${args.id}`, ... )
 }
 });
 
@@ -481,9 +481,9 @@ handler: async (ctx, args) => {
 
 Two Indices
 
-soundsoil-events: (timestamp) (date), (geo) (geo_point), (session_id) (keyword), (classification) (floats), (dominant_class) (keyword), (species_common) (text), (confidence) (float), (biodiversity_score) (integer)
+soundscape-events: (timestamp) (date), (geo) (geo_point), (session_id) (keyword), (classification) (floats), (dominant_class) (keyword), (species_common) (text), (confidence) (float), (biodiversity_score) (integer)
 
-soundsoil-uploads: (upload_id) (keyword), (username) (keyword), (title) (text), (description) (text), (timestamp) (date), (geo) (geo_point), (location_name) (text), (dominant_class) (keyword), (species_detected) (keyword[]), (biodiversity_score) (integer), (tags) (keyword[]), (likes) (integer), (listen_count) (integer)
+soundscape-uploads: (upload_id) (keyword), (username) (keyword), (title) (text), (description) (text), (timestamp) (date), (geo) (geo_point), (location_name) (text), (dominant_class) (keyword), (species_detected) (keyword[]), (biodiversity_score) (integer), (tags) (keyword[]), (likes) (integer), (listen_count) (integer)
 
 Key Queries
 
@@ -615,7 +615,7 @@ Accessibility: Screen reader descriptions of world state, colour-blind safe pale
 
 Prize
 
-How SoundSoil Wins
+How SoundScape Wins
 
 Demo Moment
 
@@ -777,7 +777,7 @@ Impact: "Imagine every neighbourhood monitoring itself."
 
 2:50-3:00
 
-Close: Split-screen. "SoundSoil. Listen to the earth. Watch it grow."
+Close: Split-screen. "SoundScape. Listen to the earth. Watch it grow."
 
 18. Lessons from UNIHACK 2025 Winners
 

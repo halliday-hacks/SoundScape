@@ -1,4 +1,4 @@
-# SoundSoil Project Memory
+# SoundScape Project Memory
 
 ## Project Identity
 - **Event:** UNIHACK 2026, March 13–15, 2026 (48-hour hackathon)
@@ -23,7 +23,7 @@
 ### ❌ Not Yet Built (priority order)
 1. **Audio ML pipeline** — TF.js YAMNet (on-device, 6 categories: bird/insect/traffic/construction/wind/silence) + BirdNET species ID
 2. **Pixel art canvas engine** — `PixelWorldEngine` class, tile system, sprite animations, particle system
-3. **Elasticsearch integration** — indices `soundsoil-events` + `soundsoil-uploads`, Convex→Elastic sync, API routes
+3. **Elasticsearch integration** — indices `soundscape-events` + `soundscape-uploads`, Convex→Elastic sync, API routes
 4. **Google OAuth** — BetterAuth needs Google credentials configured
 5. **Map/Social discovery** — Leaflet + OpenStreetMap, clustered pins, audio player cards
 6. **Upload flow UI** — record/select audio, compress WebM/Opus, upload to Convex storage
