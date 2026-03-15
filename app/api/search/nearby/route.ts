@@ -77,11 +77,11 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) {
       const body = await res.text();
+      if (body.includes("failed to find geo field") || body.includes("geo_point")) {
+        return NextResponse.json({ total: 0, center: { lat, lon }, radius, hits: [] });
+      }
       console.error(`[/api/search/nearby] Elastic error ${res.status}:`, body);
-      return NextResponse.json(
-        { error: "Search failed" },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: "Search failed" }, { status: 502 });
     }
 
     const data = await res.json();

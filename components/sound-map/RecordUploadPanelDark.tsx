@@ -97,6 +97,28 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+function safeAbort(controller: AbortController | null, reason: string) {
+  if (!controller || controller.signal.aborted) return;
+  try {
+    controller.abort(reason);
+  } catch {
+    // Ignore abort errors during cleanup/restarts.
+  }
+}
+
+async function safeFetch(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  context: string,
+) {
+  try {
+    return await fetch(input, init);
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    throw new Error(`${context}: network request failed`);
+  }
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
@@ -130,7 +152,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   // ── Meta form ──
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [dominantClass, setDominantClass] = useState("birds");
+  const [dominantClass, setDominantClass] = useState("");
   const [tagging, setTagging] = useState(false);
 
   // ── Visual preview state ──
@@ -192,8 +214,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         playerRef.current.pause();
         playerRef.current.src = "";
       }
-      gifAbortRef.current?.abort();
-      videoAbortRef.current?.abort();
+      safeAbort(gifAbortRef.current, "panel unmount");
+      safeAbort(videoAbortRef.current, "panel unmount");
       if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
       if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     },
@@ -213,7 +235,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       try {
         const buffer = await ctx.decodeAudioData(reader.result as ArrayBuffer);
         const raw = buffer.getChannelData(0);
-        const bars = 120;
+        const bars = 200;
         const block = Math.floor(raw.length / bars);
         const out: number[] = [];
         for (let i = 0; i < bars; i++) {
@@ -470,8 +492,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setWaveformData([]);
     setRecordingTime(0);
     // Clean up preview state
-    gifAbortRef.current?.abort();
-    videoAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "discard recording");
+    safeAbort(videoAbortRef.current, "discard recording");
     if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
     if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     setPreviewGifUrl(null);
@@ -489,7 +511,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   // ── Preview generation helpers ──
 
   const generatePreviewGif = useCallback(async (result: YAMNetResult) => {
-    gifAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "restart gif preview");
     const controller = new AbortController();
     gifAbortRef.current = controller;
     setGifGenerating(true);
@@ -497,20 +519,23 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPreviewGifUrl(null);
     setPreviewGifBlob(null);
     try {
-      const res = await fetch("/api/soundsoil/preview-gif", {
+      const res = await safeFetch("/api/soundsoil/preview-gif", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yamnetResult: result }),
         signal: controller.signal,
-      });
-      if (!res.ok) throw new Error("GIF generation failed");
+      }, "GIF preview");
+      if (!res.ok) throw new Error(`GIF generation failed (${res.status})`);
       const blob = await res.blob();
       if (controller.signal.aborted) return;
       const url = URL.createObjectURL(blob);
       setPreviewGifBlob(blob);
       setPreviewGifUrl(url);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") console.error("GIF preview error:", e);
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate GIF preview. Please retry.");
+        console.error("GIF preview error:", e);
+      }
     } finally {
       if (!controller.signal.aborted) setGifGenerating(false);
     }
@@ -518,7 +543,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   }, []);
 
   const generatePreviewVideo = useCallback(async (result: YAMNetResult) => {
-    videoAbortRef.current?.abort();
+    safeAbort(videoAbortRef.current, "restart video preview");
     const controller = new AbortController();
     videoAbortRef.current = controller;
     setVideoGenerating(true);
@@ -526,20 +551,23 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPreviewVideoUrl(null);
     setPreviewVideoBlob(null);
     try {
-      const res = await fetch("/api/soundsoil/preview-video", {
+      const res = await safeFetch("/api/soundsoil/preview-video", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ yamnetResult: result }),
         signal: controller.signal,
-      });
-      if (!res.ok) throw new Error("Video generation failed");
+      }, "Video preview");
+      if (!res.ok) throw new Error(`Video generation failed (${res.status})`);
       const blob = await res.blob();
       if (controller.signal.aborted) return;
       const url = URL.createObjectURL(blob);
       setPreviewVideoBlob(blob);
       setPreviewVideoUrl(url);
     } catch (e) {
-      if ((e as Error).name !== "AbortError") console.error("Video preview error:", e);
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate video preview. Please retry.");
+        console.error("Video preview error:", e);
+      }
     } finally {
       if (!controller.signal.aborted) setVideoGenerating(false);
     }
@@ -562,7 +590,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       const wavBlob = await audioFileToWav(new File([blob], "audio.webm", { type: blob.type }));
       const fd = new FormData();
       fd.append("audio", wavBlob, "audio.wav");
-      const res = await fetch("/api/yamnet-tag", { method: "POST", body: fd });
+      const res = await safeFetch(
+        "/api/yamnet-tag",
+        { method: "POST", body: fd },
+        "Auto-tagging",
+      );
       if (res.ok) {
         const data = await res.json();
         if (data.dominantClass) setDominantClass(data.dominantClass);
@@ -582,7 +614,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         generatePreviewVideo(result);
       }
     } catch {
-      // Auto-tag failed silently — user can still pick manually
+      setError("Auto-tagging failed. You can still choose the sound type manually.");
     } finally {
       setTagging(false);
     }
@@ -605,11 +637,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     try {
       // Upload audio file
       const uploadUrl = await generateUploadUrl();
-      const r = await fetch(uploadUrl, {
+      const r = await safeFetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": (file.type || "audio/webm").split(";")[0] },
         body: file,
-      });
+      }, "Audio upload");
       if (!r.ok) throw new Error(`Upload failed (${r.status})`);
       const { storageId } = await r.json();
 
@@ -617,11 +649,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       let gifStorageId: string | undefined;
       if (previewGifBlob) {
         const gifUrl = await generateUploadUrl();
-        const gifRes = await fetch(gifUrl, {
+        const gifRes = await safeFetch(gifUrl, {
           method: "POST",
           headers: { "Content-Type": "image/gif" },
           body: previewGifBlob,
-        });
+        }, "GIF upload");
         if (gifRes.ok) {
           const gifData = await gifRes.json();
           gifStorageId = gifData.storageId;
@@ -632,11 +664,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       let videoStorageId: string | undefined;
       if (previewVideoBlob) {
         const videoUrl = await generateUploadUrl();
-        const videoRes = await fetch(videoUrl, {
+        const videoRes = await safeFetch(videoUrl, {
           method: "POST",
           headers: { "Content-Type": "video/mp4" },
           body: previewVideoBlob,
-        });
+        }, "Video upload");
         if (videoRes.ok) {
           const videoData = await videoRes.json();
           videoStorageId = videoData.storageId;
@@ -646,6 +678,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       await createUpload({
         userId: session.user.id,
         storageId,
+        title: title.trim() || undefined,
         description: description.trim() || undefined,
         durationSeconds: mode === "record" ? recordingTime : (mode === "file" && fileDuration > 0 ? fileDuration : undefined),
         lat: location?.lat,
@@ -693,8 +726,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPlayerDuration(0);
     setWaveformData([]);
     // Clean up preview state
-    gifAbortRef.current?.abort();
-    videoAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "reset mode");
+    safeAbort(videoAbortRef.current, "reset mode");
     if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
     if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     setPreviewGifUrl(null);
@@ -740,8 +773,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         style={{
           position: "relative",
           pointerEvents: "all",
-          width: 380,
-          maxWidth: "100vw",
+          width: "min(380px, 100vw)",
           height: "100%",
           background: `linear-gradient(180deg, #060606 0%, ${C.bg} 100%)`,
           borderLeft: `1px solid ${C.border}`,
@@ -1228,11 +1260,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
                     {/* Static waveform visualization */}
                     {waveformData.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
+                      <div style={{ marginBottom: 12, margin: "0 -16px 12px", padding: "0 0" }}>
                         <Waveform
                           data={waveformData}
                           barColor={C.accent}
-                          barWidth={2}
+                          barWidth={3}
                           barGap={1}
                           barRadius={1}
                           height={56}
