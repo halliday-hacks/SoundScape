@@ -39,38 +39,38 @@
 }
 
 .dark {
-  /* SoundScape — deep-space spectrogram palette */
-  --background: #06080F;
-  --foreground: #E2E8F0;
-  --card: #0C0F1A;
-  --card-foreground: #E2E8F0;
-  --popover: #0C0F1A;
-  --popover-foreground: #E2E8F0;
-  --primary: #22D3EE;
-  --primary-foreground: #06080F;
-  --secondary: #111827;
-  --secondary-foreground: #E2E8F0;
-  --muted: #111827;
-  --muted-foreground: #64748B;
-  --accent: #818CF8;
-  --accent-foreground: #06080F;
+  /* SoundScape — soft dark palette, inspired by kimono embroidery */
+  --background: #07090E;
+  --foreground: #DDE4F0;
+  --card: #0B0E18;
+  --card-foreground: #DDE4F0;
+  --popover: #0B0E18;
+  --popover-foreground: #DDE4F0;
+  --primary: #93C5FD;
+  --primary-foreground: #07090E;
+  --secondary: #0F1422;
+  --secondary-foreground: #DDE4F0;
+  --muted: #0F1422;
+  --muted-foreground: #5C6A82;
+  --accent: #A5B4FC;
+  --accent-foreground: #07090E;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgba(34, 211, 238, 0.10);
-  --input: rgba(34, 211, 238, 0.07);
-  --ring: #22D3EE;
-  --chart-1: #22D3EE;
-  --chart-2: #818CF8;
+  --border: rgba(147, 197, 253, 0.09);
+  --input: rgba(147, 197, 253, 0.06);
+  --ring: #93C5FD;
+  --chart-1: #93C5FD;
+  --chart-2: #A5B4FC;
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #0C0F1A;
-  --sidebar-foreground: #E2E8F0;
-  --sidebar-primary: #22D3EE;
-  --sidebar-primary-foreground: #06080F;
-  --sidebar-accent: #111827;
-  --sidebar-accent-foreground: #E2E8F0;
-  --sidebar-border: rgba(34, 211, 238, 0.10);
-  --sidebar-ring: #22D3EE;
+  --sidebar: #0B0E18;
+  --sidebar-foreground: #DDE4F0;
+  --sidebar-primary: #93C5FD;
+  --sidebar-primary-foreground: #07090E;
+  --sidebar-accent: #0F1422;
+  --sidebar-accent-foreground: #DDE4F0;
+  --sidebar-border: rgba(147, 197, 253, 0.09);
+  --sidebar-ring: #93C5FD;
 }
 
 @theme inline {
@@ -110,7 +110,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-sans: var(--font-outfit);
-  --font-display: var(--font-syne);
+  --font-display: var(--font-cormorant);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -118,6 +118,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-outfit, system-ui, -apple-system, sans-serif);
@@ -125,16 +126,28 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  /* Subtle ambient glow at top of page */
+  /* Film grain overlay — like fabric texture */
+  body::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    opacity: 0.032;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-size: 160px 160px;
+    pointer-events: none;
+    z-index: 9998;
+  }
+
+  /* Soft top ambient glow */
   body::before {
     content: "";
     position: fixed;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 60vw;
+    width: 50vw;
     height: 1px;
-    background: linear-gradient(90deg, transparent, #22D3EE40, transparent);
+    background: linear-gradient(90deg, transparent, rgba(147, 197, 253, 0.25), transparent);
     pointer-events: none;
     z-index: 9999;
   }
@@ -145,14 +158,22 @@
     height: 4px;
   }
   ::-webkit-scrollbar-track {
-    background: #06080F;
+    background: #07090E;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(34, 211, 238, 0.2);
+    background: rgba(147, 197, 253, 0.15);
     border-radius: 2px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(34, 211, 238, 0.4);
+    background: rgba(147, 197, 253, 0.3);
+  }
+
+  /* Wordmark — refined italic serif */
+  .wordmark {
+    font-family: var(--font-cormorant, Georgia, serif);
+    font-style: italic;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 
   .maplibregl-popup-content {

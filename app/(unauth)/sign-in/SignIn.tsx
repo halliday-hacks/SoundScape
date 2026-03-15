@@ -458,7 +458,7 @@ export default function SignIn() {
               className="underline"
               target="_blank"
             >
-              <span className="dark:text-[#22D3EE]/80">better-auth.</span>
+              <span className="dark:text-[#93C5FD]/70">better-auth.</span>
             </a>
           </p>
         </div>

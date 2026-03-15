@@ -10,20 +10,14 @@ export default async function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#06080F] text-[#E2E8F0]">
-      {/* Top ambient line */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#22D3EE33] to-transparent" />
-
+    <div className="min-h-screen flex flex-col bg-[#07090E] text-[#DDE4F0]">
       {/* Nav */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-4">
         <div className="flex items-center gap-3">
-          <span
-            className="font-bold tracking-tight text-[#E2E8F0] text-lg"
-            style={{ fontFamily: "var(--font-syne, sans-serif)", letterSpacing: "-0.02em" }}
-          >
-            Sound<span className="text-[#22D3EE]">Scape</span>
+          <span className="wordmark text-xl text-[#DDE4F0]">
+            Sound<span className="text-[#93C5FD]">Scape</span>
           </span>
-          <span className="hidden sm:inline text-xs text-[#64748B] tracking-widest uppercase">
+          <span className="hidden sm:inline text-xs text-[#5C6A82] tracking-widest uppercase">
             Listen · Visualise · Map
           </span>
         </div>
@@ -32,21 +26,21 @@ export default async function LandingPage() {
             variant="ghost"
             size="sm"
             asChild
-            className="text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)]"
+            className="text-[#5C6A82] hover:text-[#DDE4F0] hover:bg-[rgba(147,197,253,0.06)]"
           >
             <Link href="/sign-in">Sign in</Link>
           </Button>
           <Button
             size="sm"
             asChild
-            className="bg-[#22D3EE] text-[#06080F] hover:bg-[#06B6D4] border-0 shadow-none font-semibold tracking-tight"
+            className="bg-[#93C5FD] text-[#07090E] hover:bg-[#BFDBFE] border-0 shadow-none font-medium"
           >
             <Link href="/sign-up">Get Started</Link>
           </Button>
         </div>
       </header>
 
-      {/* Canvas hero — full bleed on mobile, max-width on desktop */}
+      {/* Canvas hero */}
       <main className="flex-1 flex flex-col">
         <div className="w-full sm:max-w-5xl sm:mx-auto sm:px-6">
           <PixelCanvas />
@@ -54,7 +48,7 @@ export default async function LandingPage() {
 
         {/* CTA row */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-4 pb-8">
-          <p className="text-sm text-[#64748B] max-w-md text-center sm:text-left leading-relaxed">
+          <p className="text-sm text-[#5C6A82] max-w-md text-center sm:text-left leading-relaxed">
             Real-time environmental audio classification that turns your neighbourhood
             soundscape into a living pixel world.
           </p>
@@ -63,7 +57,7 @@ export default async function LandingPage() {
               variant="outline"
               size="sm"
               asChild
-              className="bg-transparent border-[rgba(34,211,238,0.2)] text-[#64748B] hover:text-[#22D3EE] hover:bg-[rgba(34,211,238,0.06)] hover:border-[rgba(34,211,238,0.4)] shadow-none transition-all"
+              className="bg-transparent border-[rgba(147,197,253,0.15)] text-[#5C6A82] hover:text-[#93C5FD] hover:bg-[rgba(147,197,253,0.06)] hover:border-[rgba(147,197,253,0.3)] shadow-none transition-all"
             >
               <Link href="/map">Sound Map</Link>
             </Button>
@@ -71,14 +65,14 @@ export default async function LandingPage() {
               variant="outline"
               size="sm"
               asChild
-              className="bg-transparent border-[rgba(34,211,238,0.2)] text-[#64748B] hover:text-[#E2E8F0] hover:bg-[rgba(34,211,238,0.06)] shadow-none"
+              className="bg-transparent border-[rgba(147,197,253,0.15)] text-[#5C6A82] hover:text-[#DDE4F0] hover:bg-[rgba(147,197,253,0.06)] shadow-none"
             >
               <Link href="/sign-in">Sign in</Link>
             </Button>
             <Button
               size="sm"
               asChild
-              className="bg-[#22D3EE] text-[#06080F] hover:bg-[#06B6D4] border-0 shadow-none font-semibold"
+              className="bg-[#93C5FD] text-[#07090E] hover:bg-[#BFDBFE] border-0 shadow-none font-medium"
             >
               <Link href="/sign-up">Start Listening →</Link>
             </Button>

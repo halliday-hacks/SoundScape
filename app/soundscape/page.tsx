@@ -210,7 +210,7 @@ export default function SoundScapePage() {
                     className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors
                       ${
                         currentStep > s.n
-                          ? "bg-[#22D3EE] text-black"
+                          ? "bg-[#93C5FD] text-black"
                           : currentStep === s.n
                             ? "bg-white text-black"
                             : "bg-zinc-800 text-zinc-500"
@@ -226,7 +226,7 @@ export default function SoundScapePage() {
                 </div>
                 {i < STEPS.length - 1 && (
                   <div
-                    className={`h-px flex-1 mb-5 transition-colors ${currentStep > s.n ? "bg-[#22D3EE]" : "bg-zinc-700"}`}
+                    className={`h-px flex-1 mb-5 transition-colors ${currentStep > s.n ? "bg-[#93C5FD]" : "bg-zinc-700"}`}
                   />
                 )}
               </div>
@@ -248,7 +248,7 @@ export default function SoundScapePage() {
         <div className="w-full max-w-lg space-y-4">
           <div className="text-center space-y-1">
             <p className="text-sm text-zinc-500">{filename}</p>
-            <p className="text-xs text-[#22D3EE]">Done</p>
+            <p className="text-xs text-[#93C5FD]">Done</p>
           </div>
 
           {isVideo ? (
