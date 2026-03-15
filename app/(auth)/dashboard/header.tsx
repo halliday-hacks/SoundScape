@@ -19,16 +19,16 @@ const UserProfile = () => {
           alt={user.name}
           width={36}
           height={36}
-          className="rounded-full ring-1 ring-[rgba(147,197,253,0.2)]"
+          className="rounded-full ring-1 ring-[rgba(139,92,246,0.2)]"
         />
       ) : (
-        <div className="w-9 h-9 rounded-full bg-[rgba(147,197,253,0.08)] border border-[rgba(147,197,253,0.15)] flex items-center justify-center text-[#93C5FD] font-semibold text-sm">
+        <div className="w-9 h-9 rounded-full bg-[rgba(139,92,246,0.08)] border border-[rgba(139,92,246,0.15)] flex items-center justify-center text-[#8B5CF6] font-semibold text-sm">
           {user?.name?.[0]?.toUpperCase() ?? "?"}
         </div>
       )}
       <div>
-        <p className="font-medium text-sm text-[#DDE4F0] leading-none">{user?.name ?? ""}</p>
-        <p className="text-xs text-[#5C6A82] mt-0.5">{user?.email ?? ""}</p>
+        <p className="font-medium text-sm text-[#F1F5F9] leading-none">{user?.name ?? ""}</p>
+        <p className="text-xs text-[#6B7280] mt-0.5">{user?.email ?? ""}</p>
       </div>
     </div>
   );
@@ -63,10 +63,10 @@ export const Header = () => {
     <header className="flex items-center justify-between py-1">
       {/* Left: wordmark + tagline */}
       <div className="flex flex-col gap-1">
-        <span className="wordmark text-2xl text-[#DDE4F0]">
-          Sound<span className="text-[#93C5FD]">Scape</span>
+        <span className="wordmark text-2xl text-[#F1F5F9]">
+          Sound<span style={{ background: "linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>Scape</span>
         </span>
-        <span className="text-[10px] text-[#5C6A82] tracking-[0.2em] uppercase">
+        <span className="text-[10px] text-[#6B7280] tracking-[0.2em] uppercase">
           Listen · Visualise · Map
         </span>
       </div>
@@ -74,29 +74,29 @@ export const Header = () => {
       {/* Right: Sound Map + user + menu */}
       <div className="flex items-center gap-3 ml-auto">
         {/* User + hamburger */}
-        <div className="flex items-center gap-2 pl-3 border-l border-[rgba(147,197,253,0.09)]">
+        <div className="flex items-center gap-2 pl-3 border-l border-[rgba(139,92,246,0.09)]">
           <UserProfile />
           <div className="relative" ref={menuRef}>
             <button
               onClick={() => setMenuOpen((v) => !v)}
-              className="flex items-center justify-center w-8 h-8 rounded-md text-[#5C6A82] hover:text-[#DDE4F0] hover:bg-[rgba(147,197,253,0.06)] transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded-md text-[#6B7280] hover:text-[#F1F5F9] hover:bg-[rgba(139,92,246,0.06)] transition-colors"
             >
               <Menu size={16} />
             </button>
 
             {menuOpen && (
-              <div className="absolute right-0 top-full mt-1.5 w-44 rounded-lg border border-[rgba(147,197,253,0.1)] bg-[#0B0E18] shadow-xl py-1 z-50">
+              <div className="absolute right-0 top-full mt-1.5 w-44 rounded-lg border border-[rgba(139,92,246,0.1)] bg-[#0D1117] shadow-xl py-1 z-50">
                 <Link
                   href="/settings"
                   onClick={() => setMenuOpen(false)}
-                  className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#5C6A82] hover:text-[#DDE4F0] hover:bg-[rgba(147,197,253,0.05)] transition-colors"
+                  className="flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#6B7280] hover:text-[#F1F5F9] hover:bg-[rgba(139,92,246,0.05)] transition-colors"
                 >
                   <Settings size={14} />
                   Settings
                 </Link>
                 <button
                   onClick={handleSignOut}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#5C6A82] hover:text-[#F87171] hover:bg-[rgba(248,113,113,0.05)] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-[#6B7280] hover:text-[#F87171] hover:bg-[rgba(248,113,113,0.05)] transition-colors"
                 >
                   <LogOut size={14} />
                   Sign out

@@ -96,7 +96,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Canvas                                                              */}
       {/* ------------------------------------------------------------------ */}
-      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(147,197,253,0.08)] bg-[#07090E]">
+      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(139,92,246,0.08)] bg-[#080B14]">
         <canvas
           ref={canvasRef}
           className="block w-full"
@@ -105,7 +105,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
 
         {/* Top-left: dominant class badge */}
         <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/60 px-2 py-1 uppercase text-[#DDE4F0]"
+          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/60 px-2 py-1 uppercase text-[#F1F5F9]"
           style={{ fontFamily: "var(--font-pixel)", fontSize: "7px", letterSpacing: "0.05em" }}
         >
           <span
@@ -125,7 +125,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
           className="absolute bottom-3 right-3 flex items-center gap-2 px-5 py-2.5 rounded-lg text-white font-semibold hover:opacity-90 transition-opacity"
           style={{
             fontSize: "14px",
-            background: "linear-gradient(#07090E, #07090E) padding-box, linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc) border-box",
+            background: "linear-gradient(#080B14, #080B14) padding-box, linear-gradient(135deg, #f87171, #fb923c, #fbbf24, #4ade80, #60a5fa, #c084fc) border-box",
             border: "1.5px solid transparent",
             backdropFilter: "blur(6px)",
             zIndex: 10,
@@ -144,17 +144,17 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       <div className="px-3 sm:px-0 mt-3 space-y-3">
         {/* Demo sliders (hidden when real classification is provided) */}
         {isDemoMode && (
-          <div className="rounded-lg border border-[rgba(147,197,253,0.09)] bg-[#0B0E18] p-4">
+          <div className="rounded-lg border border-[rgba(139,92,246,0.09)] bg-[#0D1117] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#93C5FD] animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#5C6A82]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#8B5CF6] animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#6B7280]">
                 Demo — drag to simulate environment
               </span>
             </div>
             <div className="grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2">
               {CAT_CONFIG.filter((c) => c.key !== "silence").map(({ key, label, color, emoji }) => (
                 <div key={key} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 text-xs text-[#DDE4F0]">
+                  <span className="w-28 shrink-0 text-xs text-[#F1F5F9]">
                     <span style={{ color }}>{emoji}</span> {label}
                   </span>
                   <input
@@ -167,7 +167,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
                     className="h-1 flex-1 cursor-pointer appearance-none rounded-full"
                     style={{ accentColor: color }}
                   />
-                  <span className="w-7 text-right font-mono text-[10px] text-[#5C6A82]">
+                  <span className="w-7 text-right font-mono text-[10px] text-[#6B7280]">
                     {Math.round(demo[key] * 100)}
                   </span>
                 </div>

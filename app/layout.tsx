@@ -2,19 +2,12 @@ import "./globals.css";
 import { ConvexClientProvider } from "./ConvexClientProvider";
 import { getToken } from "@/lib/auth-server";
 import { PropsWithChildren } from "react";
-import { Press_Start_2P, Outfit, Cormorant_Garamond } from "next/font/google";
+import { Press_Start_2P, Space_Grotesk } from "next/font/google";
 
-const outfit = Outfit({
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-outfit",
-  display: "swap",
-});
-
-const cormorant = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: "--font-cormorant",
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
+  variable: "--font-space-grotesk",
+  weight: ["300", "400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -29,7 +22,7 @@ export default async function RootLayout({ children }: PropsWithChildren) {
   return (
     <html
       lang="en"
-      className={`dark ${outfit.variable} ${cormorant.variable} ${pixelFont.variable}`}
+      className={`dark ${spaceGrotesk.variable} ${pixelFont.variable}`}
     >
       <body>
         <ConvexClientProvider initialToken={token}>
