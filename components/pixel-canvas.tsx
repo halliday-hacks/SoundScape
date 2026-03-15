@@ -61,9 +61,6 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
   const [demo, setDemo] = useState<Classification>(DEFAULTS);
 
   const active = classification ?? demo;
-  const bioScore = Math.round(active.biodiversityScore);
-  const bioSegments = Math.round(bioScore / 10);
-
   // Boot engine once
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -120,24 +117,6 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
           {active.dominantClass}
         </div>
 
-        {/* Top-right: 10-segment bio score bar */}
-        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 bg-black/60 px-2 py-1 rounded-sm">
-          <span style={{ fontFamily: "var(--font-pixel)", fontSize: "6px", color: "#5C6A82" }}>
-            BIO
-          </span>
-          <div className="flex items-center gap-[2px]">
-            {Array.from({ length: 10 }, (_, i) => (
-              <div
-                key={i}
-                style={{
-                  width: "6px",
-                  height: "10px",
-                  backgroundColor: i < bioSegments ? "#93C5FD" : "rgba(147,197,253,0.12)",
-                }}
-              />
-            ))}
-          </div>
-        </div>
 
         {/* Bottom-right: demo label */}
         {isDemoMode && (
