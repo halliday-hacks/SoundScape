@@ -21,13 +21,13 @@ const DEFAULTS: Classification = {
 };
 
 const CAT_CONFIG = [
-  { key: "birds"        as const, label: "Birds",        color: "#7DD3FC", emoji: "🐦" },
-  { key: "insects"      as const, label: "Insects",      color: "#A5B4FC", emoji: "🦋" },
-  { key: "rain"         as const, label: "Rain / Wind",  color: "#93C5FD", emoji: "🌧️" },
-  { key: "traffic"      as const, label: "Traffic",      color: "#F87171", emoji: "🚗" },
-  { key: "music"        as const, label: "Music",        color: "#C4B5FD", emoji: "🎵" },
-  { key: "construction" as const, label: "Construction", color: "#FBB040", emoji: "🔨" },
-  { key: "silence"      as const, label: "Silence",      color: "#475569", emoji: "🌫️" },
+  { key: "birds"        as const, label: "Birds",        color: "#22D3EE", emoji: "🐦" },
+  { key: "insects"      as const, label: "Insects",      color: "#818CF8", emoji: "🦋" },
+  { key: "rain"         as const, label: "Rain / Wind",  color: "#38BDF8", emoji: "🌧️" },
+  { key: "traffic"      as const, label: "Traffic",      color: "#F43F5E", emoji: "🚗" },
+  { key: "music"        as const, label: "Music",        color: "#A78BFA", emoji: "🎵" },
+  { key: "construction" as const, label: "Construction", color: "#FBBF24", emoji: "🔨" },
+  { key: "silence"      as const, label: "Silence",      color: "#94A3B8", emoji: "🌫️" },
 ] as const;
 
 type SliderKey = Exclude<keyof Classification, "biodiversityScore" | "dominantClass">;
@@ -178,8 +178,8 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
             <div className="grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2">
               {CAT_CONFIG.filter((c) => c.key !== "silence").map(({ key, label, color, emoji }) => (
                 <div key={key} className="flex items-center gap-3">
-                  <span className="w-28 shrink-0 text-xs" style={{ color }}>
-                    {emoji} {label}
+                  <span className="w-28 shrink-0 text-xs text-[#DDE4F0]">
+                    <span style={{ color }}>{emoji}</span> {label}
                   </span>
                   <input
                     type="range"
