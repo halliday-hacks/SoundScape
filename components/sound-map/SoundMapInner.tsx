@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   Map as MapLibre,
   MapMarker,
@@ -1866,6 +1867,11 @@ export default function SoundMapInner() {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ── Deep-link: open a specific pin from ?upload=<uploadId> ──
+  const searchParams = useSearchParams();
+  const deepLinkUploadId = searchParams.get("upload");
+  const deepLinkHandled = useRef(false);
+
   // ── Auth session ──
   const { data: session } = authClient.useSession();
 
@@ -2134,6 +2140,15 @@ export default function SoundMapInner() {
       duration: 1200,
     });
   }, []);
+
+  // ── Auto-select pin from deep-link (?upload=<uploadId>) ──
+  useEffect(() => {
+    if (!deepLinkUploadId || deepLinkHandled.current || allPins.length === 0) return;
+    const target = allPins.find((p) => p.uploadId === deepLinkUploadId);
+    if (!target) return;
+    deepLinkHandled.current = true;
+    selectPin(target);
+  }, [deepLinkUploadId, allPins, selectPin]);
 
   const selectCluster = useCallback((cluster: Cluster) => {
     setSelectedCluster(cluster);
