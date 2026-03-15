@@ -15,8 +15,8 @@ Convex + Better Auth + Next.js hackathon starter app.
 
 ```
 app/                      → Next.js app router pages and layouts
-  soundsoil/page.tsx      → SoundSoil UI (mode toggle, upload, progress, result)
-  api/soundsoil/route.ts  → SSE pipeline: YAMNet → Claude/GIF or Gemini/Veo
+  soundscape/page.tsx      → SoundScape UI (mode toggle, upload, progress, result)
+  api/soundscape/route.ts  → SSE pipeline: YAMNet → Claude/GIF or Gemini/Veo
 components/               → React UI components (shadcn/ui)
 convex/                   → Convex backend (schema, functions, auth, http)
 lib/                      → Shared utilities and client config
@@ -27,9 +27,9 @@ scripts/                  → CLI tools
 public/                   → Static assets
 ```
 
-## SoundSoil
+## SoundScape
 
-SoundSoil is a feature that converts audio files into visual art using a two-mode pipeline.
+SoundScape is a feature that converts audio files into visual art using a two-mode pipeline.
 
 ### Pipeline
 
@@ -49,7 +49,7 @@ Audio upload → YAMNet (TF.js audio classifier) → Claude or Veo
 - Step 2 — Gemini Flash (`gemini-2.5-flash`) writes a cinematic pixel-art Veo prompt from the labels
 - Step 3 — Veo 2.0 (`veo-2.0-generate-001`) generates a silent 8s 720p 16:9 MP4 → returns `data:video/mp4;base64,...`
 
-The frontend (`app/soundsoil/page.tsx`) streams SSE progress events and renders either `<img>` (GIF) or `<video>` (MP4).
+The frontend (`app/soundscape/page.tsx`) streams SSE progress events and renders either `<img>` (GIF) or `<video>` (MP4).
 
 ### Veo Prompt Rules
 
@@ -70,7 +70,7 @@ The Gemini prompt-builder (`buildVeoPrompt`) enforces:
 
 ### API Route
 
-`POST /api/soundsoil` — public (whitelisted in `proxy.ts`)
+`POST /api/soundscape` — public (whitelisted in `proxy.ts`)
 
 - Input: `multipart/form-data` with `audio` (File) and `mode` (`"gif"` or `"veo"`)
 - Output: `text/event-stream` SSE

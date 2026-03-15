@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   try {
     const res = await fetch(url.toString(), {
       headers: {
-        "User-Agent": "SoundSoil/1.0 (unihack2026@soundsoil.app)",
+        "User-Agent": "SoundScape/1.0 (unihack2026@soundscape.app)",
         "Accept-Language": "en",
       },
       next: { revalidate: 60 },

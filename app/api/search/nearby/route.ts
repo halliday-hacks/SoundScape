@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   };
 
   try {
-    const res = await fetch(`${ELASTIC_URL}/soundsoil-uploads/_search`, {
+    const res = await fetch(`${ELASTIC_URL}/soundscape-uploads/_search`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",

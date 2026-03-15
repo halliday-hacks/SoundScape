@@ -10,7 +10,7 @@ import { v } from "convex/values";
  * Flow:
  *  1. Fetch the upload doc from Convex
  *  2. Build the Elastic document shape
- *  3. PUT to soundsoil-uploads/_doc/<id>
+ *  3. PUT to soundscape-uploads/_doc/<id>
  *  4. On success → call markSynced to flip elasticSynced: true
  */
 export const syncUpload = internalAction({
@@ -57,7 +57,7 @@ export const syncUpload = internalAction({
     }
 
     // 3. PUT to Elastic
-    const url = `${ELASTIC_URL}/soundsoil-uploads/_doc/${upload._id}`;
+    const url = `${ELASTIC_URL}/soundscape-uploads/_doc/${upload._id}`;
     let response: Response;
     try {
       response = await fetch(url, {
@@ -126,7 +126,7 @@ export const deleteFromElastic = internalAction({
       return null;
     }
 
-    const url = `${ELASTIC_URL}/soundsoil-uploads/_doc/${args.id}`;
+    const url = `${ELASTIC_URL}/soundscape-uploads/_doc/${args.id}`;
     try {
       const response = await fetch(url, {
         method: "DELETE",

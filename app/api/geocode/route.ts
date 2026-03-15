@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
     const res = await fetch(url.toString(), {
       headers: {
         // Nominatim policy: must include a descriptive User-Agent
-        "User-Agent": "SoundSoil/1.0 (unihack2026@soundsoil.app)",
+        "User-Agent": "SoundScape/1.0 (unihack2026@soundscape.app)",
         "Accept-Language": "en",
       },
       // Cache for 60 seconds at the CDN/Next.js layer — geocode results don't change often

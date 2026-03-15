@@ -1,8 +1,8 @@
-# SoundSoil — UI Prompt Guide
+# SoundScape — UI Prompt Guide
 
 ## Project Identity
 
-**Name:** SoundSoil
+**Name:** SoundScape
 **Tagline:** Listen to the Earth. Watch it Grow.
 **One-liner:** A real-time environmental soundscape platform that turns neighbourhood audio into a living, pixelated game world — and lets communities explore and share the sounds of any place on Earth.
 
@@ -10,7 +10,7 @@
 
 ## The Aesthetic Mandate
 
-SoundSoil has a **dual visual identity** — and this contrast is the entire point:
+SoundScape has a **dual visual identity** — and this contrast is the entire point:
 
 1. **The Pixel Art World** — Retro game canvas (Terraria/Stardew Valley/Celeste). Tile-based, warm, earthy, cozy. Side-scrolling biome that grows and degrades. 16×16 tiles, crispy pixels, gentle sprite animations.
 2. **The App Shell** — Clean, modern, minimal UI that _frames_ the pixel world. Think: a museum frame around retro art. The UI should NOT try to be pixelated itself — the contrast between clean modern UI and retro pixel world is intentional and is part of the brand.
@@ -56,7 +56,7 @@ SoundSoil has a **dual visual identity** — and this contrast is the entire poi
 
 ### `/` — Landing Page (unauthenticated)
 
-The marketing face of SoundSoil. Should immediately communicate:
+The marketing face of SoundScape. Should immediately communicate:
 
 - What it is (pixel world grows from real sounds)
 - The dual aesthetic (pixel art + clean UI)

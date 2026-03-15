@@ -14,7 +14,7 @@ export default async function LandingPage() {
       {/* Nav */}
       <header className="flex items-center justify-between px-4 sm:px-6 py-3">
         <div className="flex items-center gap-2">
-          <span className="font-bold tracking-tight text-[#EDE8DC]">SoundSoil</span>
+          <span className="font-bold tracking-tight text-[#EDE8DC]">SoundScape</span>
           <span className="hidden sm:inline text-xs text-[#9E9B8E] italic">
             Listen to the Earth. Watch it Grow.
           </span>

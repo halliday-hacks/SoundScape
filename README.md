@@ -1,6 +1,6 @@
 # Hackathon Starter
 
-Convex + Better Auth + Next.js starter with the SoundSoil feature — converts audio into pixel-art GIFs or Veo-generated videos.
+Convex + Better Auth + Next.js starter with the SoundScape feature — converts audio into pixel-art GIFs or Veo-generated videos.
 
 ## Stack
 
@@ -50,10 +50,10 @@ Create a `.env.local` in the project root:
 CONVEX_DEPLOYMENT=...
 NEXT_PUBLIC_CONVEX_URL=...
 
-# Anthropic — used by SoundSoil GIF mode
+# Anthropic — used by SoundScape GIF mode
 ANTHROPIC_API_KEY=sk-ant-...
 
-# Google Gemini — used by SoundSoil Veo mode
+# Google Gemini — used by SoundScape Veo mode
 GEMINI_API_KEY=AIza...
 ```
 
@@ -75,13 +75,13 @@ bun scripts/setup-yamnet.ts
 bun run dev
 ```
 
-This starts the Next.js frontend and the Convex backend concurrently. Open [http://localhost:3000/soundsoil](http://localhost:3000/soundsoil).
+This starts the Next.js frontend and the Convex backend concurrently. Open [http://localhost:3000/soundscape](http://localhost:3000/soundscape).
 
 ---
 
-## SoundSoil
+## SoundScape
 
-SoundSoil converts audio into visual art via two modes.
+SoundScape converts audio into visual art via two modes.
 
 ### GIF mode (fast, ~10–30s)
 
@@ -119,8 +119,8 @@ Because the model files are in `public/yamnet-model/`, they are automatically se
 
 ```
 app/
-  soundsoil/page.tsx      → SoundSoil UI (mode toggle, upload, progress, result)
-  api/soundsoil/route.ts  → SSE pipeline: YAMNet → Claude/GIF or Gemini/Veo
+  soundscape/page.tsx      → SoundScape UI (mode toggle, upload, progress, result)
+  api/soundscape/route.ts  → SSE pipeline: YAMNet → Claude/GIF or Gemini/Veo
 components/               → React UI components (shadcn/ui)
 convex/                   → Convex backend (schema, functions, auth, http)
   analyzeAudio.ts         → Internal action: run YAMNet on a Convex-stored file

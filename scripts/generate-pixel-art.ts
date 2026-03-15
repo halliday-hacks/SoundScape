@@ -54,7 +54,7 @@ async function main() {
 
   // Step 2: Claude → drawFrame function
   console.error("\n[2/3] Generating art via Claude...");
-  const systemPrompt = loadSkillContent(path.resolve("soundsoil-pixelart.skill"));
+  const systemPrompt = loadSkillContent(path.resolve("soundscape-pixelart.skill"));
   const client = new Anthropic();
 
   const payload = {

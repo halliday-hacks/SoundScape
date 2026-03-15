@@ -2,7 +2,7 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "soundsoil-dev",
+      "name": "soundscape-dev",
       "runtimeExecutable": "bun",
       "runtimeArgs": ["run", "dev:frontend"],
       "port": 3000,

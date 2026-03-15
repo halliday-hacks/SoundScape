@@ -51,7 +51,7 @@ export function PixelOverlay({ sounds }: Props) {
   const overlayRef = useRef<google.maps.OverlayView | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-  // SoundSoil UI tokens (flat)
+  // SoundScape UI tokens (flat)
   const tokens = useMemo(() => {
     return {
       surface: { r: 30, g: 33, b: 24 }, // #1E2118

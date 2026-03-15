@@ -25,7 +25,7 @@ if (!ELASTIC_URL || !ELASTIC_API_KEY) {
   process.exit(1);
 }
 
-const INDEX_NAME = "soundsoil-uploads";
+const INDEX_NAME = "soundscape-uploads";
 
 async function runElasticQuery(endpointName: string, queryBody: any) {
   console.log(`\n🔍 Executing: ${endpointName}`);

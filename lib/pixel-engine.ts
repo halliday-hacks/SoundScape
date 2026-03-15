@@ -1,4 +1,4 @@
-// SoundSoil Pixel World Engine
+// SoundScape Pixel World Engine
 // Draws a 50×25 tile pixel art biome that reacts to audio classification.
 // Pass Classification updates via setClassification() — state lerps smoothly.
 
