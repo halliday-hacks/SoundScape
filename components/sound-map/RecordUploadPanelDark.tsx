@@ -97,6 +97,15 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+function safeAbort(controller: AbortController | null, reason: string) {
+  if (!controller || controller.signal.aborted) return;
+  try {
+    controller.abort(reason);
+  } catch {
+    // Ignore abort errors during cleanup/restarts.
+  }
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
@@ -192,8 +201,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         playerRef.current.pause();
         playerRef.current.src = "";
       }
-      gifAbortRef.current?.abort();
-      videoAbortRef.current?.abort();
+      safeAbort(gifAbortRef.current, "panel unmount");
+      safeAbort(videoAbortRef.current, "panel unmount");
       if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
       if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     },
@@ -470,8 +479,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setWaveformData([]);
     setRecordingTime(0);
     // Clean up preview state
-    gifAbortRef.current?.abort();
-    videoAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "discard recording");
+    safeAbort(videoAbortRef.current, "discard recording");
     if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
     if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     setPreviewGifUrl(null);
@@ -489,7 +498,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   // ── Preview generation helpers ──
 
   const generatePreviewGif = useCallback(async (result: YAMNetResult) => {
-    gifAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "restart gif preview");
     const controller = new AbortController();
     gifAbortRef.current = controller;
     setGifGenerating(true);
@@ -518,7 +527,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   }, []);
 
   const generatePreviewVideo = useCallback(async (result: YAMNetResult) => {
-    videoAbortRef.current?.abort();
+    safeAbort(videoAbortRef.current, "restart video preview");
     const controller = new AbortController();
     videoAbortRef.current = controller;
     setVideoGenerating(true);
@@ -693,8 +702,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPlayerDuration(0);
     setWaveformData([]);
     // Clean up preview state
-    gifAbortRef.current?.abort();
-    videoAbortRef.current?.abort();
+    safeAbort(gifAbortRef.current, "reset mode");
+    safeAbort(videoAbortRef.current, "reset mode");
     if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
     if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     setPreviewGifUrl(null);
