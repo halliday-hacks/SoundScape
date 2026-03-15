@@ -86,7 +86,7 @@ export default function SignIn() {
   };
 
   const handleAnonymousSignIn = async () => {
-    await authClient.signIn.anonymous(
+    await (authClient.signIn as any).anonymous(
       {},
       {
         onRequest: () => {
