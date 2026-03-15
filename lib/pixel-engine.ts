@@ -3,11 +3,12 @@
 // Pass Classification updates via setClassification() — state lerps smoothly.
 
 export interface Classification {
-  bird: number;         // 0–1
-  insect: number;       // 0–1
+  birds: number;        // 0–1
+  insects: number;      // 0–1
+  rain: number;         // 0–1
   traffic: number;      // 0–1
+  music: number;        // 0–1
   construction: number; // 0–1
-  wind: number;         // 0–1
   silence: number;      // 0–1
   biodiversityScore: number; // 0–100
   dominantClass: string;
@@ -56,55 +57,55 @@ interface Palette {
 }
 
 const P_LUSH: Palette = {
-  skyTop: '#1a6db5',
-  skyBottom: '#6ab4e8',
-  grass: '#4CAF50',
-  grassDark: '#2E7D32',
-  dirt: '#6D4C41',
-  stone: '#546E7A',
-  leafA: '#2E7D32',
-  leafB: '#1B5E20',
-  leafC: '#43A047',
-  trunk: '#4E342E',
+  skyTop: '#3A7EC8',    // bright mid-day blue
+  skyBottom: '#8EC8F0', // soft horizon blue
+  grass: '#6B7C3A',     // muted olive — not #4CAF50, more natural
+  grassDark: '#4E5C28', // deeper olive
+  dirt: '#9B7B52',      // warm sandy brown
+  stone: '#8A9BAA',     // cool stone
+  leafA: '#4A6B2A',     // deep olive foliage
+  leafB: '#3A5520',     // darker olive
+  leafC: '#5C7A35',     // olive highlight
+  trunk: '#6B4423',     // warm brown trunk
 };
 
 const P_MODERATE: Palette = {
-  skyTop: '#3d85c8',
-  skyBottom: '#8ec6e8',
-  grass: '#7CB342',
-  grassDark: '#558B2F',
-  dirt: '#795548',
-  stone: '#607D8B',
-  leafA: '#558B2F',
-  leafB: '#33691E',
-  leafC: '#8BC34A',
-  trunk: '#4E342E',
+  skyTop: '#5B8FC0',    // slightly hazier blue
+  skyBottom: '#A0C8E0', // pale hazy horizon
+  grass: '#7A8A4A',     // dusty sage
+  grassDark: '#5A6835', // deeper sage
+  dirt: '#8B7050',      // warm earth
+  stone: '#8A9CAA',     // grey stone
+  leafA: '#5A6A35',     // muted sage leaf
+  leafB: '#455228',     // dark sage
+  leafC: '#6A7A40',     // sage highlight
+  trunk: '#6B4423',     // brown trunk
 };
 
 const P_DEGRADED: Palette = {
-  skyTop: '#546E7A',
-  skyBottom: '#90A4AE',
-  grass: '#8D6E63',
-  grassDark: '#6D4C41',
-  dirt: '#5D4037',
-  stone: '#546E7A',
-  leafA: '#827717',
-  leafB: '#5D4037',
-  leafC: '#9E9D24',
-  trunk: '#4E342E',
+  skyTop: '#8A9BAA',    // overcast grey sky
+  skyBottom: '#B8C8D0', // pale grey horizon
+  grass: '#8A7A5A',     // dry straw/dust
+  grassDark: '#6A5C40', // darker dust
+  dirt: '#8B6B48',      // dry cracked earth
+  stone: '#7A8A90',     // worn stone
+  leafA: '#7A7040',     // dying olive leaf
+  leafB: '#5C5530',     // dry leaf
+  leafC: '#8A7A48',     // dust highlight
+  trunk: '#5C4030',     // dry trunk
 };
 
 const P_DEAD: Palette = {
-  skyTop: '#263238',
-  skyBottom: '#455A64',
-  grass: '#4E342E',
-  grassDark: '#3E2723',
-  dirt: '#3E2723',
-  stone: '#37474F',
-  leafA: '#4E342E',
-  leafB: '#3E2723',
-  leafC: '#5D4037',
-  trunk: '#37474F',
+  skyTop: '#6A7A84',    // ashen overcast sky
+  skyBottom: '#9AAAB4', // pale ashen horizon
+  grass: '#6A6050',     // ash/dust ground
+  grassDark: '#504840', // dark ash
+  dirt: '#604C3C',      // dark dry earth
+  stone: '#686878',     // dark stone
+  leafA: '#6A6050',     // dead leaf
+  leafB: '#504840',     // dead dark leaf
+  leafC: '#706858',     // dead highlight
+  trunk: '#484038',     // dead trunk
 };
 
 function lerpPalette(a: Palette, b: Palette, t: number): Palette {
@@ -171,10 +172,10 @@ const CW = GW * T;   // 800
 const CH = GH * T;   // 400
 
 const LEAF_SETS = [
-  ['#2E7D32', '#1B5E20', '#43A047'],
-  ['#33691E', '#1B5E20', '#558B2F'],
-  ['#1E8449', '#145A32', '#27AE60'],
-  ['#2d6a4f', '#1b4332', '#40916c'],
+  ['#4A6B2A', '#3A5520', '#5C7A35'],
+  ['#506030', '#3C4A22', '#617240'],
+  ['#456028', '#34481E', '#587035'],
+  ['#4E6832', '#3A5025', '#607840'],
 ] as const;
 
 const FLOWER_COLORS  = ['#e83535', '#f5c518', '#8b35e8', '#ff69b4', '#FF6B6B', '#FFD700'];
@@ -206,9 +207,9 @@ export class PixelWorldEngine {
     this.ctx = canvas.getContext('2d')!;
 
     const init: Classification = {
-      bird: 0.35, insect: 0.25, traffic: 0,
-      construction: 0, wind: 0.1, silence: 0.3,
-      biodiversityScore: 58, dominantClass: 'bird',
+      birds: 0.35, insects: 0.25, rain: 0.1, traffic: 0,
+      music: 0, construction: 0, silence: 0.3,
+      biodiversityScore: 58, dominantClass: 'birds',
     };
     this.cur = { ...init };
     this.tgt = { ...init };
@@ -250,13 +251,13 @@ export class PixelWorldEngine {
 
   private update() {
     const s = 0.018;
-    const keys = ['bird','insect','traffic','construction','wind','silence','biodiversityScore'] as const;
+    const keys = ['birds','insects','rain','traffic','music','construction','silence','biodiversityScore'] as const;
     for (const k of keys) (this.cur[k] as number) = lerp(this.cur[k] as number, this.tgt[k] as number, s);
     this.cur.dominantClass = this.tgt.dominantClass;
     this.bioScore = lerp(this.bioScore, this.tgt.biodiversityScore, s);
 
     // Trees
-    const wantTrees = Math.round(this.cur.bird * 8);
+    const wantTrees = Math.round(this.cur.birds * 8);
     const liveTrees = this.trees.filter(t => t.targetHeight > 0);
     while (liveTrees.length < wantTrees) {
       const used = new Set(this.trees.flatMap(t => [t.col-1, t.col, t.col+1, t.col+2]));
@@ -273,7 +274,7 @@ export class PixelWorldEngine {
     this.trees = this.trees.filter(t => !(t.targetHeight === 0 && t.height < 0.12));
 
     // Flowers
-    const wantFlowers = Math.round(this.cur.insect * 15);
+    const wantFlowers = Math.round(this.cur.insects * 15);
     const liveFlowers = this.flowers.filter(f => f.targetBloom > 0);
     while (liveFlowers.length < wantFlowers) {
       const f: Flower = { col: Math.floor(Math.random() * GW), color: FLOWER_COLORS[Math.floor(Math.random() * FLOWER_COLORS.length)], bloom: 0, targetBloom: 1 };
@@ -284,15 +285,15 @@ export class PixelWorldEngine {
     this.flowers = this.flowers.filter(f => !(f.targetBloom === 0 && f.bloom < 0.05));
 
     // Particles
-    if (this.cur.wind > 0.2) {
-      for (let i = 0; i < Math.ceil(this.cur.wind * 7); i++)
+    if (this.cur.rain > 0.2) {
+      for (let i = 0; i < Math.ceil(this.cur.rain * 7); i++)
         this.particles.push({ x: Math.random() * (CW + 40), y: 0, vx: -0.6, vy: 5 + Math.random() * 3, life: 1, type: 'rain' });
     }
     if (this.cur.traffic > 0.2 || this.cur.construction > 0.2) {
       for (let i = 0; i < Math.ceil(Math.max(this.cur.traffic, this.cur.construction) * 4); i++)
         this.particles.push({ x: Math.random() * CW, y: GROUND * T + Math.random() * 24, vx: (Math.random()-0.5)*1.2, vy: -0.3 - Math.random()*0.7, life: 1, type: 'dust' });
     }
-    if (this.bioScore > 65 && this.cur.insect > 0.3 && this.frame % 9 === 0)
+    if (this.bioScore > 65 && this.cur.insects > 0.3 && this.frame % 9 === 0)
       this.particles.push({ x: 20 + Math.random()*(CW-40), y: (GROUND-5)*T + Math.random()*T*3, vx: (Math.random()-0.5)*0.4, vy: (Math.random()-0.5)*0.3, life: 1, type: 'firefly' });
 
     const decay: Record<Particle['type'], number> = { rain: 0.055, dust: 0.014, firefly: 0.007 };
@@ -300,7 +301,7 @@ export class PixelWorldEngine {
     this.particles = this.particles.filter(p => p.life > 0 && p.y < CH && p.x > -10 && p.x < CW + 10);
     if (this.particles.length > 280) this.particles.splice(0, this.particles.length - 280);
 
-    const windBoost = 1 + this.cur.wind * 2.5;
+    const windBoost = 1 + this.cur.rain * 2.5;
     for (const c of this.clouds) { c.x += c.speed * windBoost; if (c.x > CW + 130) c.x = -130; }
   }
 
@@ -326,8 +327,37 @@ export class PixelWorldEngine {
       ctx.fillRect(0, 0, CW, GROUND * T);
     }
 
+    // Sun — visible when rain/wind is low
+    const sunAlpha = Math.max(0, 1 - this.cur.rain * 4);
+    if (sunAlpha > 0.01) {
+      const sx = CW - 110;
+      const sy = 38;
+      const pulse = 1 + Math.sin(this.frame * 0.03) * 0.08;
+      // Outer glow
+      ctx.fillStyle = `rgba(255,220,80,${sunAlpha * 0.18 * pulse})`;
+      ctx.fillRect(sx - 20, sy - 20, 68, 68);
+      // Mid glow
+      ctx.fillStyle = `rgba(255,230,100,${sunAlpha * 0.30 * pulse})`;
+      ctx.fillRect(sx - 12, sy - 12, 52, 52);
+      // Sun body
+      ctx.fillStyle = `rgba(255,235,60,${sunAlpha})`;
+      ctx.fillRect(sx, sy, 28, 28);
+      ctx.fillStyle = `rgba(255,248,120,${sunAlpha})`;
+      ctx.fillRect(sx + 4, sy + 2, 16, 10);
+      // Rays (pixel style)
+      ctx.fillStyle = `rgba(255,220,50,${sunAlpha * 0.85})`;
+      ctx.fillRect(sx + 12, sy - 10, 4, 8);   // top
+      ctx.fillRect(sx + 12, sy + 30, 4, 8);   // bottom
+      ctx.fillRect(sx - 10, sy + 12, 8, 4);   // left
+      ctx.fillRect(sx + 30, sy + 12, 8, 4);   // right
+      ctx.fillRect(sx - 7,  sy - 7,  5, 5);   // top-left
+      ctx.fillRect(sx + 30, sy - 7,  5, 5);   // top-right
+      ctx.fillRect(sx - 7,  sy + 30, 5, 5);   // bottom-left
+      ctx.fillRect(sx + 30, sy + 30, 5, 5);   // bottom-right
+    }
+
     // Clouds
-    ctx.fillStyle = `rgba(255,255,255,${0.72 + this.cur.wind * 0.15})`;
+    ctx.fillStyle = `rgba(255,255,255,${0.72 + this.cur.rain * 0.15})`;
     for (const c of this.clouds) this.drawCloud(c.x, c.y, c.w, c.h);
 
     // Rain
@@ -375,8 +405,8 @@ export class PixelWorldEngine {
     }
 
     // Puddles
-    if (this.cur.wind > 0.3) {
-      ctx.fillStyle = `rgba(70,120,170,${(this.cur.wind - 0.3) * 0.55})`;
+    if (this.cur.rain > 0.3) {
+      ctx.fillStyle = `rgba(70,120,170,${(this.cur.rain - 0.3) * 0.55})`;
       for (let gx = 4; gx < GW - 4; gx += 10) ctx.fillRect(gx * T + 2, (GROUND + 1) * T - 3, T * 2, 3);
     }
 
@@ -424,8 +454,8 @@ export class PixelWorldEngine {
     }
 
     // Birds
-    if (this.cur.bird > 0.2) {
-      const bCount = Math.ceil(this.cur.bird * 4);
+    if (this.cur.birds > 0.2) {
+      const bCount = Math.ceil(this.cur.birds * 4);
       for (let b = 0; b < bCount; b++) {
         const bx = Math.round((this.frame * (0.55 + b * 0.28) + b * (CW / bCount)) % (CW + 60)) - 30;
         const by = Math.round((GROUND - 10 - b * 1.8) * T + Math.sin(this.frame * 0.04 + b * 1.2) * 7);
@@ -434,8 +464,8 @@ export class PixelWorldEngine {
     }
 
     // Butterflies
-    if (this.cur.insect > 0.2) {
-      const bfCount = Math.ceil(this.cur.insect * 4);
+    if (this.cur.insects > 0.2) {
+      const bfCount = Math.ceil(this.cur.insects * 4);
       for (let bf = 0; bf < bfCount; bf++) {
         const bfx = Math.round((80 + bf * (CW / bfCount) + Math.sin(this.frame * 0.022 + bf * 2.1) * 48) % CW);
         const bfy = Math.round((GROUND - 3.5) * T + Math.sin(this.frame * 0.038 + bf * 1.7) * 16);

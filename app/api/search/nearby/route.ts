@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/$/, "");
+const ELASTIC_URL = process.env.ELASTIC_URL?.replace(/\/+$/, "");
 const ELASTIC_API_KEY = process.env.ELASTIC_API_KEY;
 
 /**
@@ -77,11 +77,11 @@ export async function GET(req: NextRequest) {
 
     if (!res.ok) {
       const body = await res.text();
+      if (body.includes("failed to find geo field") || body.includes("geo_point")) {
+        return NextResponse.json({ total: 0, center: { lat, lon }, radius, hits: [] });
+      }
       console.error(`[/api/search/nearby] Elastic error ${res.status}:`, body);
-      return NextResponse.json(
-        { error: "Search failed" },
-        { status: 502 }
-      );
+      return NextResponse.json({ error: "Search failed" }, { status: 502 });
     }
 
     const data = await res.json();

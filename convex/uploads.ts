@@ -7,6 +7,11 @@ import {
 import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
+const yamnetLabelValidator = v.object({
+  label: v.string(),
+  score: v.float64(),
+});
+
 const uploadFields = v.object({
   _id: v.id("uploads"),
   _creationTime: v.number(),
@@ -24,6 +29,11 @@ const uploadFields = v.object({
   listenCount: v.number(),
   tags: v.optional(v.array(v.string())),
   elasticSynced: v.optional(v.boolean()),
+  gifStorageId: v.optional(v.id("_storage")),
+  videoStorageId: v.optional(v.id("_storage")),
+  gifStatus: v.optional(v.string()),
+  videoStatus: v.optional(v.string()),
+  yamnetLabels: v.optional(v.array(yamnetLabelValidator)),
 });
 
 export const create = mutation({
@@ -39,6 +49,11 @@ export const create = mutation({
     biodiversityScore: v.optional(v.float64()),
     dominantClass: v.optional(v.string()),
     tags: v.optional(v.array(v.string())),
+    gifStorageId: v.optional(v.id("_storage")),
+    videoStorageId: v.optional(v.id("_storage")),
+    gifStatus: v.optional(v.string()),
+    videoStatus: v.optional(v.string()),
+    yamnetLabels: v.optional(v.array(yamnetLabelValidator)),
   },
   returns: v.id("uploads"),
   handler: async (ctx, args) => {
@@ -48,6 +63,8 @@ export const create = mutation({
       likeCount: 0,
       listenCount: 0,
       elasticSynced: false,
+      gifStatus: args.gifStatus ?? "pending",
+      videoStatus: args.videoStatus ?? "pending",
     });
     await ctx.scheduler.runAfter(0, internal.elastic.syncUpload, { id });
     return id;
@@ -210,27 +227,7 @@ export const getStorageUrl = query({
 // Internal query used by the elastic sync action (avoids exposing to public API)
 export const getByIdInternal = internalQuery({
   args: { uploadId: v.id("uploads") },
-  returns: v.union(
-    v.object({
-      _id: v.id("uploads"),
-      _creationTime: v.number(),
-      userId: v.string(),
-      storageId: v.optional(v.id("_storage")),
-      title: v.string(),
-      description: v.optional(v.string()),
-      durationSeconds: v.optional(v.float64()),
-      lat: v.optional(v.float64()),
-      lon: v.optional(v.float64()),
-      locationLabel: v.optional(v.string()),
-      biodiversityScore: v.optional(v.float64()),
-      dominantClass: v.optional(v.string()),
-      likeCount: v.number(),
-      listenCount: v.number(),
-      tags: v.optional(v.array(v.string())),
-      elasticSynced: v.optional(v.boolean()),
-    }),
-    v.null(),
-  ),
+  returns: v.union(uploadFields, v.null()),
   handler: async (ctx, args) => {
     return await ctx.db.get(args.uploadId);
   },
@@ -267,6 +264,29 @@ export const resetSyncFlag = internalMutation({
   },
 });
 
+export const patchVisuals = mutation({
+  args: {
+    uploadId: v.id("uploads"),
+    gifStorageId: v.optional(v.id("_storage")),
+    videoStorageId: v.optional(v.id("_storage")),
+    gifStatus: v.optional(v.string()),
+    videoStatus: v.optional(v.string()),
+    yamnetLabels: v.optional(v.array(yamnetLabelValidator)),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const { uploadId, ...fields } = args;
+    const patch: Record<string, unknown> = {};
+    for (const [k, val] of Object.entries(fields)) {
+      if (val !== undefined) patch[k] = val;
+    }
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(uploadId, patch);
+    }
+    return null;
+  },
+});
+
 export const deleteUpload = mutation({
   args: { uploadId: v.id("uploads") },
   returns: v.null(),
@@ -277,6 +297,13 @@ export const deleteUpload = mutation({
     // Delete the audio file from storage (if it exists)
     if (upload.storageId) {
       await ctx.storage.delete(upload.storageId);
+    }
+    // Delete GIF and video files from storage
+    if (upload.gifStorageId) {
+      await ctx.storage.delete(upload.gifStorageId);
+    }
+    if (upload.videoStorageId) {
+      await ctx.storage.delete(upload.videoStorageId);
     }
 
     // Delete all likes for this upload

@@ -322,7 +322,7 @@ const Map = forwardRef<MapRef, MapProps>(function Map(
     <MapContext.Provider value={contextValue}>
       <div
         ref={containerRef}
-        className={cn("relative w-full h-full", className)}
+        className={cn("relative w-full h-full [&_.maplibregl-ctrl-top-right]:hidden [&_.maplibregl-ctrl-top-left]:hidden [&_.maplibregl-ctrl-bottom-right_.maplibregl-ctrl-group]:hidden [&_.maplibregl-ctrl-bottom-left]:hidden", className)}
       >
         {!isLoaded && <DefaultLoader />}
         {/* SSR-safe: children render only when map is loaded on client */}

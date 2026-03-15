@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --radius: 0.625rem;
+  --radius: 0.5rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -39,38 +39,46 @@
 }
 
 .dark {
-  /* SoundScape dark palette */
-  --background: #0D0F0A;
-  --foreground: #EDE8DC;
-  --card: #171A12;
-  --card-foreground: #EDE8DC;
-  --popover: #171A12;
-  --popover-foreground: #EDE8DC;
-  --primary: #4A9B3F;
-  --primary-foreground: #EDE8DC;
-  --secondary: #1E2118;
-  --secondary-foreground: #EDE8DC;
-  --muted: #1E2118;
-  --muted-foreground: #9E9B8E;
-  --accent: #1E2118;
-  --accent-foreground: #EDE8DC;
+  /* SoundScape — neo-futurist editorial palette */
+  --bg-1: #050f1f;
+  --bg-2: #0B0F2A;
+  --bg-3: #0D1117;
+  --line: rgba(255,255,255,0.10);
+  --panel: rgba(255,255,255,0.05);
+  --panel-strong: rgba(255,255,255,0.09);
+
+  /* shadcn tokens */
+  --background: #050f1f;
+  --foreground: rgba(255,255,255,0.92);
+  --card: #0D1117;
+  --card-foreground: rgba(255,255,255,0.92);
+  --popover: #0D1117;
+  --popover-foreground: rgba(255,255,255,0.92);
+  --primary: #7B6CFF;
+  --primary-foreground: #ffffff;
+  --secondary: #0B0F2A;
+  --secondary-foreground: rgba(255,255,255,0.72);
+  --muted: #0B0F2A;
+  --muted-foreground: rgba(255,255,255,0.42);
+  --accent: #56D7FF;
+  --accent-foreground: #050f1f;
   --destructive: oklch(0.704 0.191 22.216);
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.10);
-  --ring: #4A9B3F;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: #171A12;
-  --sidebar-foreground: #EDE8DC;
-  --sidebar-primary: #4A9B3F;
-  --sidebar-primary-foreground: #EDE8DC;
-  --sidebar-accent: #1E2118;
-  --sidebar-accent-foreground: #EDE8DC;
-  --sidebar-border: rgba(255, 255, 255, 0.08);
-  --sidebar-ring: #4A9B3F;
+  --border: rgba(255,255,255,0.10);
+  --input: rgba(255,255,255,0.06);
+  --ring: #7B6CFF;
+  --chart-1: #7B6CFF;
+  --chart-2: #56D7FF;
+  --chart-3: #FF8A3D;
+  --chart-4: #D81BFF;
+  --chart-5: #7DFF9B;
+  --sidebar: #0D1117;
+  --sidebar-foreground: rgba(255,255,255,0.92);
+  --sidebar-primary: #7B6CFF;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #0B0F2A;
+  --sidebar-accent-foreground: rgba(255,255,255,0.72);
+  --sidebar-border: rgba(255,255,255,0.10);
+  --sidebar-ring: #7B6CFF;
 }
 
 @theme inline {
@@ -109,16 +117,78 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: var(--font-space-grotesk);
+  --font-display: var(--font-space-grotesk);
+  --font-mono: ui-monospace, monospace;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
-    font-family: var(--font-inter, system-ui, -apple-system, sans-serif);
+    font-family: var(--font-space-grotesk, system-ui, sans-serif);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
+
+  /* Top ambient line — violet/cyan */
+  body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 70vw;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(123,108,255,0.5), rgba(86,215,255,0.3), transparent);
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #050f1f;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255,255,255,0.12);
+    border-radius: 2px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.22);
+  }
+
+  /* Wordmark */
+  .wordmark {
+    font-family: var(--font-space-grotesk, system-ui, sans-serif);
+    font-style: normal;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+
+  /* Display — oversized editorial type */
+  .display-type {
+    font-family: var(--font-space-grotesk, system-ui, sans-serif);
+    font-weight: 700;
+    line-height: 0.88;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+  }
+
+  /* Glass panel */
+  .glass-panel {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.10);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+
   .maplibregl-popup-content {
     @apply bg-transparent! shadow-none! p-0! rounded-none!;
   }

@@ -24,13 +24,12 @@ import {
   ScrubBarThumb,
   ScrubBarTimeLabel,
 } from "@/components/ui/scrub-bar";
+import { audioFileToWav } from "@/lib/audio-to-wav";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 type Mode = "record" | "file";
 type Step =
-  | "idle"
-  | "locating"
   | "ready"
   | "recording"
   | "preview"
@@ -98,6 +97,28 @@ const inputStyle: React.CSSProperties = {
   fontFamily: "inherit",
 };
 
+function safeAbort(controller: AbortController | null, reason: string) {
+  if (!controller || controller.signal.aborted) return;
+  try {
+    controller.abort(reason);
+  } catch {
+    // Ignore abort errors during cleanup/restarts.
+  }
+}
+
+async function safeFetch(
+  input: RequestInfo | URL,
+  init: RequestInit | undefined,
+  context: string,
+) {
+  try {
+    return await fetch(input, init);
+  } catch (e) {
+    if ((e as Error).name === "AbortError") throw e;
+    throw new Error(`${context}: network request failed`);
+  }
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
@@ -107,7 +128,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
   // ── Core state ──
   const [mode, setMode] = useState<Mode>("record");
-  const [step, setStep] = useState<Step>("idle");
+  const [step, setStep] = useState<Step>("ready");
   const [error, setError] = useState("");
 
   // ── Location ──
@@ -129,7 +150,27 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ── Meta form ──
+  const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [dominantClass, setDominantClass] = useState("");
+  const [tagging, setTagging] = useState(false);
+
+  // ── Visual preview state ──
+  type YAMNetResult = {
+    dominantClass: string;
+    yamnetLabel: string;
+    confidence: number;
+    topLabels: { label: string; score: number }[];
+  };
+  const [yamnetResult, setYamnetResult] = useState<YAMNetResult | null>(null);
+  const [previewGifUrl, setPreviewGifUrl] = useState<string | null>(null);
+  const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
+  const [previewGifBlob, setPreviewGifBlob] = useState<Blob | null>(null);
+  const [previewVideoBlob, setPreviewVideoBlob] = useState<Blob | null>(null);
+  const [gifGenerating, setGifGenerating] = useState(false);
+  const [videoGenerating, setVideoGenerating] = useState(false);
+  const gifAbortRef = useRef<AbortController | null>(null);
+  const videoAbortRef = useRef<AbortController | null>(null);
 
   // ── Recording internals ──
   const mrRef = useRef<MediaRecorder | null>(null);
@@ -173,6 +214,10 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         playerRef.current.pause();
         playerRef.current.src = "";
       }
+      safeAbort(gifAbortRef.current, "panel unmount");
+      safeAbort(videoAbortRef.current, "panel unmount");
+      if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
+      if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -190,7 +235,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       try {
         const buffer = await ctx.decodeAudioData(reader.result as ArrayBuffer);
         const raw = buffer.getChannelData(0);
-        const bars = 120;
+        const bars = 200;
         const block = Math.floor(raw.length / bars);
         const out: number[] = [];
         for (let i = 0; i < bars; i++) {
@@ -263,13 +308,14 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
   };
 
   // ── Geolocation ──
+  const [locating, setLocating] = useState(false);
 
   const fetchLocation = useCallback(async () => {
-    setStep("locating");
+    setLocating(true);
     setError("");
     if (!navigator.geolocation) {
       setError("Geolocation not supported.");
-      setStep("idle");
+      setLocating(false);
       return;
     }
     try {
@@ -293,7 +339,6 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         /* keep coords */
       }
       setLocation({ lat, lon, label });
-      setStep("ready");
     } catch (e: unknown) {
       const ge = e as GeolocationPositionError;
       setError(
@@ -301,9 +346,19 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
           ? "Location permission denied."
           : "Unable to get location.",
       );
-      setStep("idle");
+    } finally {
+      setLocating(false);
     }
   }, []);
+
+  // Auto-fetch GPS + pre-warm mic permission on mount
+  useEffect(() => {
+    fetchLocation();
+    // Pre-request mic permission so the first record click doesn't flash
+    navigator.mediaDevices?.getUserMedia({ audio: true }).then((s) => {
+      s.getTracks().forEach((t) => t.stop());
+    }).catch(() => {});
+  }, [fetchLocation]);
 
   // ── Location search ──
 
@@ -368,6 +423,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         setAudioUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
         setStep("preview");
+        autoTag(blob);
       };
 
       // ── Set up AnalyserNode for Orb volume ──
@@ -435,8 +491,134 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setPlayerDuration(0);
     setWaveformData([]);
     setRecordingTime(0);
+    // Clean up preview state
+    safeAbort(gifAbortRef.current, "discard recording");
+    safeAbort(videoAbortRef.current, "discard recording");
+    if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
+    if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
+    setPreviewGifUrl(null);
+    setPreviewVideoUrl(null);
+    setPreviewGifBlob(null);
+    setPreviewVideoBlob(null);
+    setGifGenerating(false);
+    setVideoGenerating(false);
+    setYamnetResult(null);
+    setTitle("");
+    setDescription("");
     setStep("ready");
   };
+
+  // ── Preview generation helpers ──
+
+  const generatePreviewGif = useCallback(async (result: YAMNetResult) => {
+    safeAbort(gifAbortRef.current, "restart gif preview");
+    const controller = new AbortController();
+    gifAbortRef.current = controller;
+    setGifGenerating(true);
+    if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
+    setPreviewGifUrl(null);
+    setPreviewGifBlob(null);
+    try {
+      const res = await safeFetch("/api/soundsoil/preview-gif", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yamnetResult: result }),
+        signal: controller.signal,
+      }, "GIF preview");
+      if (!res.ok) throw new Error(`GIF generation failed (${res.status})`);
+      const blob = await res.blob();
+      if (controller.signal.aborted) return;
+      const url = URL.createObjectURL(blob);
+      setPreviewGifBlob(blob);
+      setPreviewGifUrl(url);
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate GIF preview. Please retry.");
+        console.error("GIF preview error:", e);
+      }
+    } finally {
+      if (!controller.signal.aborted) setGifGenerating(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const generatePreviewVideo = useCallback(async (result: YAMNetResult) => {
+    safeAbort(videoAbortRef.current, "restart video preview");
+    const controller = new AbortController();
+    videoAbortRef.current = controller;
+    setVideoGenerating(true);
+    if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
+    setPreviewVideoUrl(null);
+    setPreviewVideoBlob(null);
+    try {
+      const res = await safeFetch("/api/soundsoil/preview-video", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ yamnetResult: result }),
+        signal: controller.signal,
+      }, "Video preview");
+      if (!res.ok) throw new Error(`Video generation failed (${res.status})`);
+      const blob = await res.blob();
+      if (controller.signal.aborted) return;
+      const url = URL.createObjectURL(blob);
+      setPreviewVideoBlob(blob);
+      setPreviewVideoUrl(url);
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") {
+        setError("Unable to generate video preview. Please retry.");
+        console.error("Video preview error:", e);
+      }
+    } finally {
+      if (!controller.signal.aborted) setVideoGenerating(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const redoGif = useCallback(() => {
+    if (yamnetResult) generatePreviewGif(yamnetResult);
+  }, [yamnetResult, generatePreviewGif]);
+
+  const redoVideo = useCallback(() => {
+    if (yamnetResult) generatePreviewVideo(yamnetResult);
+  }, [yamnetResult, generatePreviewVideo]);
+
+  // ── Auto-tag via YAMNet ──
+
+  const autoTag = useCallback(async (blob: Blob) => {
+    setTagging(true);
+    try {
+      const wavBlob = await audioFileToWav(new File([blob], "audio.webm", { type: blob.type }));
+      const fd = new FormData();
+      fd.append("audio", wavBlob, "audio.wav");
+      const res = await safeFetch(
+        "/api/yamnet-tag",
+        { method: "POST", body: fd },
+        "Auto-tagging",
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.dominantClass) setDominantClass(data.dominantClass);
+        // Always set AI-generated title/description (overwrite any previous value)
+        setTitle(data.suggestedTitle || "");
+        setDescription(data.suggestedDescription || "");
+
+        // Store result and kick off visual previews in parallel
+        const result: YAMNetResult = {
+          dominantClass: data.dominantClass,
+          yamnetLabel: data.yamnetLabel,
+          confidence: data.confidence,
+          topLabels: data.topLabels,
+        };
+        setYamnetResult(result);
+        generatePreviewGif(result);
+        generatePreviewVideo(result);
+      }
+    } catch {
+      setError("Auto-tagging failed. You can still choose the sound type manually.");
+    } finally {
+      setTagging(false);
+    }
+  }, [generatePreviewGif, generatePreviewVideo]);
 
   // ── Submit ──
 
@@ -453,23 +635,62 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
     setStep("uploading");
     setError("");
     try {
+      // Upload audio file
       const uploadUrl = await generateUploadUrl();
-      const r = await fetch(uploadUrl, {
+      const r = await safeFetch(uploadUrl, {
         method: "POST",
-        headers: { "Content-Type": file.type || "audio/webm" },
+        headers: { "Content-Type": (file.type || "audio/webm").split(";")[0] },
         body: file,
-      });
+      }, "Audio upload");
       if (!r.ok) throw new Error(`Upload failed (${r.status})`);
       const { storageId } = await r.json();
+
+      // Upload GIF preview if available
+      let gifStorageId: string | undefined;
+      if (previewGifBlob) {
+        const gifUrl = await generateUploadUrl();
+        const gifRes = await safeFetch(gifUrl, {
+          method: "POST",
+          headers: { "Content-Type": "image/gif" },
+          body: previewGifBlob,
+        }, "GIF upload");
+        if (gifRes.ok) {
+          const gifData = await gifRes.json();
+          gifStorageId = gifData.storageId;
+        }
+      }
+
+      // Upload video preview if available
+      let videoStorageId: string | undefined;
+      if (previewVideoBlob) {
+        const videoUrl = await generateUploadUrl();
+        const videoRes = await safeFetch(videoUrl, {
+          method: "POST",
+          headers: { "Content-Type": "video/mp4" },
+          body: previewVideoBlob,
+        }, "Video upload");
+        if (videoRes.ok) {
+          const videoData = await videoRes.json();
+          videoStorageId = videoData.storageId;
+        }
+      }
 
       await createUpload({
         userId: session.user.id,
         storageId,
+        title: title.trim() || undefined,
         description: description.trim() || undefined,
         durationSeconds: mode === "record" ? recordingTime : (mode === "file" && fileDuration > 0 ? fileDuration : undefined),
         lat: location?.lat,
         lon: location?.lon,
         locationLabel: location?.label || undefined,
+        dominantClass,
+        tags: [dominantClass],
+        gifStorageId: gifStorageId as Parameters<typeof createUpload>[0]["gifStorageId"],
+        videoStorageId: videoStorageId as Parameters<typeof createUpload>[0]["videoStorageId"],
+        gifStatus: gifStorageId ? "done" : "pending",
+        videoStatus: videoStorageId ? "done" : "pending",
+        yamnetLabels: yamnetResult?.topLabels,
       });
 
       setStep("success");
@@ -492,7 +713,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
   const resetMode = (m: Mode) => {
     setMode(m);
-    setStep("idle");
+    setStep("ready");
     setError("");
     setAudioBlob(null);
     if (audioUrl) {
@@ -500,11 +721,24 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
       setAudioUrl(null);
     }
     setSelectedFile(null);
-    setLocation(null);
     setPlaying(false);
     setPlayerTime(0);
     setPlayerDuration(0);
     setWaveformData([]);
+    // Clean up preview state
+    safeAbort(gifAbortRef.current, "reset mode");
+    safeAbort(videoAbortRef.current, "reset mode");
+    if (previewGifUrl) URL.revokeObjectURL(previewGifUrl);
+    if (previewVideoUrl) URL.revokeObjectURL(previewVideoUrl);
+    setPreviewGifUrl(null);
+    setPreviewVideoUrl(null);
+    setPreviewGifBlob(null);
+    setPreviewVideoBlob(null);
+    setGifGenerating(false);
+    setVideoGenerating(false);
+    setYamnetResult(null);
+    setTitle("");
+    setDescription("");
   };
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -539,8 +773,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
         style={{
           position: "relative",
           pointerEvents: "all",
-          width: 380,
-          maxWidth: "100vw",
+          width: "min(380px, 100vw)",
           height: "100%",
           background: `linear-gradient(180deg, #060606 0%, ${C.bg} 100%)`,
           borderLeft: `1px solid ${C.border}`,
@@ -685,109 +918,47 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
           style={{
             flex: 1,
             overflowY: "auto",
-            padding: "16px 20px 20px",
+            padding: "16px 20px 80px",
+            ...(step === "uploading" ? { display: "flex", alignItems: "center", justifyContent: "center" } : {}),
           }}
         >
-          {/* ═══════ RECORD MODE ═══════ */}
-          {mode === "record" && (
-            <>
-              {/* ── Idle / Locating ── */}
-              {(step === "idle" || step === "locating") && (
-                <div style={{ textAlign: "center", padding: "40px 0" }}>
-                  <div
-                    style={{
-                      width: 80,
-                      height: 80,
-                      margin: "0 auto 20px",
-                      borderRadius: "50%",
-                      background: C.surface,
-                      border: `1px solid ${C.border}`,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <svg
-                      width="28"
-                      height="28"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke={
-                        step === "locating" ? C.accent : C.textMid
-                      }
-                      strokeWidth="1.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      style={
-                        step === "locating"
-                          ? {
-                              animation:
-                                "panelPulse 1.2s ease-in-out infinite",
-                            }
-                          : undefined
-                      }
-                    >
-                      <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z" />
-                      <circle cx="12" cy="10" r="3" />
-                    </svg>
-                  </div>
-                  <div
-                    style={{
-                      color: C.text,
-                      fontWeight: 600,
-                      fontSize: 14,
-                      marginBottom: 4,
-                    }}
-                  >
-                    {step === "locating"
-                      ? "Getting your location…"
-                      : "Pin your location"}
-                  </div>
-                  <div
-                    style={{
-                      color: C.textMuted,
-                      fontSize: 12,
-                      marginBottom: 28,
-                      lineHeight: 1.5,
-                    }}
-                  >
-                    We&apos;ll tag your recording to the map
-                  </div>
-                  <button
-                    onClick={fetchLocation}
-                    disabled={step === "locating"}
-                    style={{
-                      background:
-                        step === "locating" ? C.surface : C.accent,
-                      color: step === "locating" ? C.textMuted : "#000",
-                      border: "none",
-                      borderRadius: 10,
-                      padding: "11px 32px",
-                      fontWeight: 700,
-                      fontSize: 13,
-                      cursor:
-                        step === "locating"
-                          ? "not-allowed"
-                          : "pointer",
-                      letterSpacing: "0.01em",
-                      transition: "all .15s",
-                    }}
-                  >
-                    {step === "locating"
-                      ? "Locating…"
-                      : "Use My Location"}
-                  </button>
-                </div>
-              )}
+          {/* ── Uploading (centered in body) ── */}
+          {step === "uploading" && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 12,
+                color: C.accent,
+                fontSize: 14,
+                fontWeight: 600,
+                animation: "stepFadeIn .25s ease-out",
+              }}
+            >
+              <Spinner />
+              Uploading…
+            </div>
+          )}
 
+          {/* ═══════ RECORD MODE ═══════ */}
+          {mode === "record" && step !== "uploading" && (
+            <>
               {/* ── Ready ── */}
-              {step === "ready" && location && (
-                <div style={{ textAlign: "center", padding: "20px 0" }}>
-                  {/* Location badge */}
-                  <LocationBadge
-                    location={location}
-                    onRefresh={fetchLocation}
-                  />
+              {step === "ready" && (
+                <div key="ready" style={{ textAlign: "center", padding: "20px 0", animation: "stepFadeIn .25s ease-out" }}>
+                  {/* Location status */}
+                  {locating ? (
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, color: C.textMuted, fontSize: 12, marginBottom: 16 }}>
+                      <Spinner /> Getting location...
+                    </div>
+                  ) : location ? (
+                    <LocationBadge
+                      location={location}
+                      onRefresh={fetchLocation}
+                    />
+                  ) : null}
 
                   {/* Dormant Orb */}
                   <div
@@ -862,10 +1033,12 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
               {/* ── Recording (immersive) ── */}
               {step === "recording" && (
                 <div
+                  key="recording"
                   style={{
                     textAlign: "center",
                     padding: "12px 0 0",
                     position: "relative",
+                    animation: "stepFadeIn .25s ease-out",
                   }}
                 >
                   {/* Location (compact) */}
@@ -1027,7 +1200,7 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
               {/* ── Preview ── */}
               {step === "preview" && audioUrl && (
-                <div>
+                <div key="preview" style={{ animation: "stepFadeIn .25s ease-out" }}>
                   {/* Waveform + Player card */}
                   <div
                     style={{
@@ -1087,11 +1260,11 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
 
                     {/* Static waveform visualization */}
                     {waveformData.length > 0 && (
-                      <div style={{ marginBottom: 12 }}>
+                      <div style={{ marginBottom: 12, margin: "0 -16px 12px", padding: "0 0" }}>
                         <Waveform
                           data={waveformData}
                           barColor={C.accent}
-                          barWidth={2}
+                          barWidth={3}
                           barGap={1}
                           barRadius={1}
                           height={56}
@@ -1198,27 +1371,47 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                     </div>
                   </div>
 
-                  {/* Location badge */}
-                  {location && (
-                    <LocationBadge
-                      location={location}
-                      onRefresh={fetchLocation}
-                      style={{ marginBottom: 16 }}
-                    />
-                  )}
+                  {/* Editable location */}
+                  <EditableLocation
+                    location={location}
+                    locating={locating}
+                    onRefreshGps={fetchLocation}
+                    onLocationChange={setLocation}
+                    customQuery={customQuery}
+                    setCustomQuery={setCustomQuery}
+                    suggestions={suggestions}
+                    showSug={showSug}
+                    setShowSug={setShowSug}
+                    searchLocation={searchLocation}
+                    pickSuggestion={pickSuggestion}
+                  />
 
                   {/* Meta form */}
                   <MetaForm
                     desc={description}
                     setDesc={setDescription}
+                    dc={dominantClass}
+                    tagging={tagging}
                   />
+
+                  {/* Visual preview */}
+                  {(gifGenerating || videoGenerating || previewGifUrl || previewVideoUrl) && (
+                    <VisualPreview
+                      gifUrl={previewGifUrl}
+                      videoUrl={previewVideoUrl}
+                      gifGenerating={gifGenerating}
+                      videoGenerating={videoGenerating}
+                      onRedoGif={redoGif}
+                      onRedoVideo={redoVideo}
+                    />
+                  )}
                 </div>
               )}
             </>
           )}
 
           {/* ═══════ FILE MODE ═══════ */}
-          {mode === "file" && (
+          {mode === "file" && step !== "uploading" && (
             <>
               <div
                 onClick={() => fileInputRef.current?.click()}
@@ -1248,6 +1441,8 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                     audio.onloadedmetadata = () => {
                       setFileDuration(audio.duration);
                     };
+
+                    autoTag(f);
                   }}
                 />
                 {selectedFile ? (
@@ -1350,165 +1545,44 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
                 )}
               </div>
 
-              {/* Location */}
-              <div style={{ marginBottom: 16 }}>
-                <div
-                  style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: C.textMid,
-                    letterSpacing: 0.6,
-                    marginBottom: 8,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Location
-                </div>
-                {location && (
-                  <LocationBadge
-                    location={location}
-                    onDismiss={() => setLocation(null)}
-                    style={{ marginBottom: 8 }}
-                  />
-                )}
-                <div style={{ display: "flex", gap: 6 }}>
-                  <button
-                    onClick={fetchLocation}
-                    disabled={step === "locating"}
-                    style={{
-                      background: C.accent,
-                      color: "#000",
-                      border: "none",
-                      borderRadius: 8,
-                      padding: "8px 12px",
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor:
-                        step === "locating"
-                          ? "not-allowed"
-                          : "pointer",
-                      opacity: step === "locating" ? 0.6 : 1,
-                      whiteSpace: "nowrap",
-                      transition: "opacity .15s",
-                    }}
-                  >
-                    {step === "locating" ? "…" : "GPS"}
-                  </button>
-                  <div style={{ flex: 1, position: "relative" }}>
-                    <div style={{ display: "flex", gap: 4 }}>
-                      <input
-                        type="text"
-                        placeholder="Search a place…"
-                        value={customQuery}
-                        onChange={(e) => {
-                          setCustomQuery(e.target.value);
-                          setShowSug(false);
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") searchLocation();
-                        }}
-                        style={{
-                          ...inputStyle,
-                          padding: "8px 10px",
-                        }}
-                      />
-                      <button
-                        onClick={searchLocation}
-                        style={{
-                          background: C.surface,
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 8,
-                          padding: "0 10px",
-                          fontSize: 13,
-                          cursor: "pointer",
-                          color: C.textMid,
-                          flexShrink: 0,
-                        }}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        >
-                          <circle cx="11" cy="11" r="8" />
-                          <line
-                            x1="21"
-                            y1="21"
-                            x2="16.65"
-                            y2="16.65"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                    {showSug && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "calc(100% + 4px)",
-                          left: 0,
-                          right: 0,
-                          background: "rgba(8,8,8,0.98)",
-                          border: `1px solid ${C.border}`,
-                          borderRadius: 10,
-                          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                          zIndex: 100,
-                          maxHeight: 180,
-                          overflowY: "auto",
-                        }}
-                      >
-                        {suggestions.length === 0 ? (
-                          <div
-                            style={{
-                              padding: "10px 12px",
-                              fontSize: 12,
-                              color: C.textMuted,
-                            }}
-                          >
-                            No results found
-                          </div>
-                        ) : (
-                          suggestions.map((s, i) => (
-                            <button
-                              key={i}
-                              onClick={() => pickSuggestion(s)}
-                              style={{
-                                width: "100%",
-                                background: "none",
-                                border: "none",
-                                borderBottom:
-                                  i < suggestions.length - 1
-                                    ? `1px solid ${C.borderFaint}`
-                                    : "none",
-                                padding: "9px 12px",
-                                textAlign: "left",
-                                cursor: "pointer",
-                                fontSize: 12,
-                                color: C.textMid,
-                                lineHeight: 1.4,
-                              }}
-                            >
-                              {s.display_name
-                                .split(",")
-                                .slice(0, 3)
-                                .join(", ")}
-                            </button>
-                          ))
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
+              {/* Location — auto-detected, editable */}
+              <EditableLocation
+                location={location}
+                locating={locating}
+                onRefreshGps={fetchLocation}
+                onLocationChange={setLocation}
+                customQuery={customQuery}
+                setCustomQuery={setCustomQuery}
+                suggestions={suggestions}
+                showSug={showSug}
+                setShowSug={setShowSug}
+                searchLocation={searchLocation}
+                pickSuggestion={pickSuggestion}
+              />
 
               {(selectedFile || location) && (
-                <MetaForm
-                  desc={description}
-                  setDesc={setDescription}
-                />
+                <>
+                  <MetaForm
+                    title={title}
+                    setTitle={setTitle}
+                    desc={description}
+                    setDesc={setDescription}
+                    dc={dominantClass}
+                    tagging={tagging}
+                  />
+
+                  {/* Visual preview */}
+                  {(gifGenerating || videoGenerating || previewGifUrl || previewVideoUrl) && (
+                    <VisualPreview
+                      gifUrl={previewGifUrl}
+                      videoUrl={previewVideoUrl}
+                      gifGenerating={gifGenerating}
+                      videoGenerating={videoGenerating}
+                      onRedoGif={redoGif}
+                      onRedoVideo={redoVideo}
+                    />
+                  )}
+                </>
               )}
             </>
           )}
@@ -1631,24 +1705,6 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
             </div>
           )}
 
-        {step === "uploading" && (
-          <div
-            style={{
-              padding: "14px 20px",
-              borderTop: `1px solid ${C.borderFaint}`,
-              flexShrink: 0,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              color: C.accent,
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            <Spinner /> Uploading…
-          </div>
-        )}
 
         {/* ── Animations ── */}
         <style>{`
@@ -1659,6 +1715,10 @@ export default function RecordUploadPanelDark({ onClose, onSuccess }: Props) {
           @keyframes panelFadeIn {
             from { opacity: 0; }
             to   { opacity: 1; }
+          }
+          @keyframes stepFadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
           }
           @keyframes panelPulse {
             0%, 100% { opacity: 1; }
@@ -1732,6 +1792,7 @@ function LocationBadge({
       </div>
       {onRefresh && (
         <button
+          type="button"
           onClick={onRefresh}
           style={{
             background: "none",
@@ -1764,36 +1825,447 @@ function LocationBadge({
   );
 }
 
-function MetaForm({
-  desc,
-  setDesc,
+function EditableLocation({
+  location,
+  locating,
+  onRefreshGps,
+  onLocationChange,
+  customQuery,
+  setCustomQuery,
+  suggestions,
+  showSug,
+  setShowSug,
+  searchLocation,
+  pickSuggestion,
 }: {
-  desc: string;
-  setDesc: (v: string) => void;
+  location: Location | null;
+  locating: boolean;
+  onRefreshGps: () => void;
+  onLocationChange: (loc: Location) => void;
+  customQuery: string;
+  setCustomQuery: (v: string) => void;
+  suggestions: { lat: number; lon: number; display_name: string }[];
+  showSug: boolean;
+  setShowSug: (v: boolean) => void;
+  searchLocation: () => void;
+  pickSuggestion: (s: { lat: number; lon: number; display_name: string }) => void;
 }) {
   return (
-    <div>
-      <label
+    <div style={{ marginBottom: 16 }}>
+      <div
         style={{
           fontSize: 11,
           fontWeight: 600,
           color: C.textMid,
           letterSpacing: 0.6,
-          display: "block",
-          marginBottom: 6,
+          marginBottom: 8,
           textTransform: "uppercase",
         }}
       >
-        Description <span style={{ fontWeight: 400, opacity: 0.5 }}>(optional)</span>
-      </label>
-      <textarea
-        placeholder="What do you hear?"
-        value={desc}
-        onChange={(e) => setDesc(e.target.value)}
-        rows={3}
-        maxLength={400}
-        style={{ ...inputStyle, resize: "none" as const }}
-      />
+        Location
+      </div>
+
+      {/* Current location display */}
+      {locating ? (
+        <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.textMuted, fontSize: 12, marginBottom: 8 }}>
+          <Spinner /> Getting location...
+        </div>
+      ) : location ? (
+        <LocationBadge
+          location={location}
+          onRefresh={onRefreshGps}
+          style={{ marginBottom: 8 }}
+        />
+      ) : null}
+
+      {/* Lat/Lon inputs */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+        <div style={{ flex: 1 }}>
+          <input
+            type="number"
+            step="any"
+            placeholder="Latitude"
+            value={location?.lat ?? ""}
+            onChange={(e) => {
+              const lat = parseFloat(e.target.value);
+              if (!isNaN(lat)) {
+                onLocationChange({
+                  lat,
+                  lon: location?.lon ?? 0,
+                  label: `${lat.toFixed(5)}, ${(location?.lon ?? 0).toFixed(5)}`,
+                });
+              }
+            }}
+            style={{ ...inputStyle, padding: "7px 10px", fontSize: 12 }}
+          />
+        </div>
+        <div style={{ flex: 1 }}>
+          <input
+            type="number"
+            step="any"
+            placeholder="Longitude"
+            value={location?.lon ?? ""}
+            onChange={(e) => {
+              const lon = parseFloat(e.target.value);
+              if (!isNaN(lon)) {
+                onLocationChange({
+                  lat: location?.lat ?? 0,
+                  lon,
+                  label: `${(location?.lat ?? 0).toFixed(5)}, ${lon.toFixed(5)}`,
+                });
+              }
+            }}
+            style={{ ...inputStyle, padding: "7px 10px", fontSize: 12 }}
+          />
+        </div>
+      </div>
+
+      {/* Place search */}
+      <div style={{ position: "relative" }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          <input
+            type="text"
+            placeholder="Search a place..."
+            value={customQuery}
+            onChange={(e) => {
+              setCustomQuery(e.target.value);
+              setShowSug(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") searchLocation();
+            }}
+            style={{ ...inputStyle, padding: "7px 10px", fontSize: 12 }}
+          />
+          <button
+            onClick={searchLocation}
+            style={{
+              background: C.surface,
+              border: `1px solid ${C.border}`,
+              borderRadius: 8,
+              padding: "0 10px",
+              fontSize: 13,
+              cursor: "pointer",
+              color: C.textMid,
+              flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+          </button>
+        </div>
+        {showSug && (
+          <div
+            style={{
+              position: "absolute",
+              top: "calc(100% + 4px)",
+              left: 0,
+              right: 0,
+              background: "rgba(8,8,8,0.98)",
+              border: `1px solid ${C.border}`,
+              borderRadius: 10,
+              boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+              zIndex: 100,
+              maxHeight: 180,
+              overflowY: "auto",
+            }}
+          >
+            {suggestions.length === 0 ? (
+              <div style={{ padding: "10px 12px", fontSize: 12, color: C.textMuted }}>
+                No results found
+              </div>
+            ) : (
+              suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  onClick={() => pickSuggestion(s)}
+                  style={{
+                    width: "100%",
+                    background: "none",
+                    border: "none",
+                    borderBottom: i < suggestions.length - 1 ? `1px solid ${C.borderFaint}` : "none",
+                    padding: "9px 12px",
+                    textAlign: "left",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    color: C.textMid,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {s.display_name.split(",").slice(0, 3).join(", ")}
+                </button>
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MetaForm({
+  desc,
+  setDesc,
+  title,
+  setTitle,
+  dc,
+  tagging,
+}: {
+  title?: string;
+  setTitle?: (v: string) => void;
+  desc: string;
+  setDesc: (v: string) => void;
+  dc: string;
+  tagging?: boolean;
+}) {
+  const matchedType = SOUND_TYPES.find((t) => t.value === dc);
+  return (
+    <div>
+      {/* Sound type — shown first, non-editable, detected by AI */}
+      <div style={{ marginBottom: 14 }}>
+        <label
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.textMid,
+            letterSpacing: 0.6,
+            display: "block",
+            marginBottom: 8,
+            textTransform: "uppercase",
+          }}
+        >
+          Sound type{tagging && <span style={{ fontWeight: 400, opacity: 0.6, textTransform: "none", marginLeft: 6 }}>detecting...</span>}
+        </label>
+        {tagging ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, color: C.textMuted, fontSize: 12 }}>
+            <Spinner /> Classifying audio...
+          </div>
+        ) : matchedType ? (
+          <div
+            style={{
+              background: C.accentDim,
+              border: `1px solid ${C.accentBorder}`,
+              borderRadius: 20,
+              padding: "6px 12px",
+              fontSize: 12,
+              color: C.accent,
+              fontWeight: 600,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 5,
+              animation: "stepFadeIn .25s ease-out",
+            }}
+          >
+            <span>{matchedType.icon}</span>
+            <span>{matchedType.label}</span>
+          </div>
+        ) : null}
+      </div>
+
+      {/* Title — editable, AI-suggested */}
+      <div style={{ marginBottom: 14, animation: title ? "stepFadeIn .25s ease-out" : undefined }}>
+        <label
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.textMid,
+            letterSpacing: 0.6,
+            display: "block",
+            marginBottom: 6,
+            textTransform: "uppercase",
+          }}
+        >
+          Title
+        </label>
+        <input
+          type="text"
+          placeholder="Generating title..."
+          value={title}
+          onChange={(e) => setTitle?.(e.target.value)}
+          disabled={tagging}
+          maxLength={120}
+          style={{ ...inputStyle, opacity: tagging ? 0.5 : 1, cursor: tagging ? "not-allowed" : undefined }}
+        />
+      </div>
+
+      {/* Description — editable, AI-suggested */}
+      <div style={{ marginBottom: 14, animation: desc ? "stepFadeIn .25s ease-out" : undefined }}>
+        <label
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: C.textMid,
+            letterSpacing: 0.6,
+            display: "block",
+            marginBottom: 6,
+            textTransform: "uppercase",
+          }}
+        >
+          Description
+        </label>
+        <textarea
+          placeholder="Generating description..."
+          value={desc}
+          onChange={(e) => setDesc(e.target.value)}
+          disabled={tagging}
+          rows={2}
+          maxLength={400}
+          style={{ ...inputStyle, resize: "none" as const, opacity: tagging ? 0.5 : 1, cursor: tagging ? "not-allowed" : undefined }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function VisualPreview({
+  gifUrl,
+  videoUrl,
+  gifGenerating,
+  videoGenerating,
+  onRedoGif,
+  onRedoVideo,
+}: {
+  gifUrl: string | null;
+  videoUrl: string | null;
+  gifGenerating: boolean;
+  videoGenerating: boolean;
+  onRedoGif: () => void;
+  onRedoVideo: () => void;
+}) {
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: C.textMid,
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+          marginBottom: 8,
+        }}
+      >
+        Visual Preview
+      </div>
+
+      {/* GIF card */}
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 12,
+          padding: 12,
+          marginBottom: 8,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: gifUrl ? 8 : 0,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, display: "flex", alignItems: "center", gap: 6 }}>
+            {gifGenerating && <Spinner />}
+            <span>{gifGenerating ? "Generating GIF..." : gifUrl ? "Pixel Art GIF" : "GIF"}</span>
+          </div>
+          {gifUrl && (
+            <button
+              onClick={onRedoGif}
+              disabled={gifGenerating}
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                padding: "3px 8px",
+                color: C.textMid,
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: gifGenerating ? "not-allowed" : "pointer",
+                opacity: gifGenerating ? 0.5 : 1,
+                transition: "all .15s",
+              }}
+            >
+              Redo
+            </button>
+          )}
+        </div>
+        {gifUrl && (
+          <img
+            src={gifUrl}
+            alt="Pixel art preview"
+            style={{
+              width: "100%",
+              maxHeight: 160,
+              objectFit: "cover",
+              borderRadius: 8,
+              imageRendering: "pixelated",
+              display: "block",
+            }}
+          />
+        )}
+      </div>
+
+      {/* Video card */}
+      <div
+        style={{
+          background: C.surface,
+          border: `1px solid ${C.border}`,
+          borderRadius: 12,
+          padding: 12,
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            marginBottom: videoUrl ? 8 : 0,
+          }}
+        >
+          <div style={{ fontSize: 12, fontWeight: 600, color: C.text, display: "flex", alignItems: "center", gap: 6 }}>
+            {videoGenerating && <Spinner />}
+            <span>{videoGenerating ? "Generating video..." : videoUrl ? "Veo Video" : "Video"}</span>
+          </div>
+          {videoUrl && (
+            <button
+              onClick={onRedoVideo}
+              disabled={videoGenerating}
+              style={{
+                background: C.surface,
+                border: `1px solid ${C.border}`,
+                borderRadius: 6,
+                padding: "3px 8px",
+                color: C.textMid,
+                fontSize: 11,
+                fontWeight: 500,
+                cursor: videoGenerating ? "not-allowed" : "pointer",
+                opacity: videoGenerating ? 0.5 : 1,
+                transition: "all .15s",
+              }}
+            >
+              Redo
+            </button>
+          )}
+        </div>
+        {videoUrl && (
+          <video
+            src={videoUrl}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              width: "100%",
+              maxHeight: 160,
+              objectFit: "cover",
+              borderRadius: 8,
+              display: "block",
+            }}
+          />
+        )}
+      </div>
     </div>
   );
 }

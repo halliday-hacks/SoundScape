@@ -1,17 +1,13 @@
 import { Header } from "./header";
-import { PixelCanvas } from "@/components/pixel-canvas";
+import { DashboardClient } from "./DashboardClient";
 
 const Page = async () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-[#050f1f]">
       <div className="mx-auto max-w-5xl px-4 py-4 space-y-5">
         <Header />
         <div className="space-y-1">
-          <div className="flex items-baseline gap-3">
-            <h1 className="text-sm font-semibold tracking-wide text-neutral-200">SoundScape</h1>
-            <span className="text-xs text-neutral-500 italic">Listen to the Earth. Watch it Grow.</span>
-          </div>
-          <PixelCanvas />
+          <DashboardClient />
         </div>
       </div>
     </div>
