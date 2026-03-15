@@ -4,13 +4,10 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from "react"
 import { useSearchParams } from "next/navigation";
 import {
   Map as MapLibre,
-  MapMarker,
-  MarkerContent,
   MapControls,
-  useMap,
+  MapClusterLayer,
   type MapRef,
 } from "@/components/ui/map";
-import type MapLibreGL from "maplibre-gl";
 import { useQuery, useMutation } from "convex/react";
 import { authClient } from "@/lib/auth-client";
 import { api } from "@/convex/_generated/api";
@@ -55,20 +52,15 @@ interface Pin {
   location: string;
   // Set for pins loaded from Convex — enables real audio playback
   storageId?: string;
+  // Visual art fields
+  gifStorageId?: string;
+  videoStorageId?: string;
+  gifStatus?: string;
+  videoStatus?: string;
+  uploadId?: string;
+  userId?: string;
 }
 
-interface Cluster {
-  kind: "cluster";
-  lat: number;
-  lng: number;
-  pins: Pin[];
-  dominantType: SoundType;
-}
-interface Single {
-  kind: "single";
-  pin: Pin;
-}
-type MapItem = Cluster | Single;
 
 // ─── Config ────────────────────────────────────────────────────────────────────
 const CFG: Record<SoundType, { color: string; label: string; icon: string }> = {
@@ -81,1328 +73,8 @@ const CFG: Record<SoundType, { color: string; label: string; icon: string }> = {
   silence: { color: "#94a3b8", label: "Silence", icon: "🌫️" },
 };
 
-// Chill, acoustic animations — slow and gentle
-const ANIM: Record<SoundType, { name: string; dur: string; timing: string }> = {
-  birds: { name: "birdFloat", dur: "3.2s", timing: "ease-in-out" },
-  traffic: { name: "carDrift", dur: "2.8s", timing: "ease-in-out" },
-  music: { name: "musicSway", dur: "2.4s", timing: "ease-in-out" },
-  rain: { name: "rainDrop", dur: "2.0s", timing: "ease-in-out" },
-  construction: { name: "constNod", dur: "2.6s", timing: "ease-in-out" },
-  insects: { name: "insectHover", dur: "2.2s", timing: "ease-in-out" },
-  silence: { name: "silenceBreathe", dur: "4.0s", timing: "ease-in-out" },
-};
 
-// ─── Pins ──────────────────────────────────────────────────────────────────────
-const PINS: Pin[] = [
-  // ── Ho Chi Minh City ──
-  {
-    id: 1,
-    lat: 10.7769,
-    lng: 106.7009,
-    type: "birds",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Spotted Dove",
-    species: "Spilopelia chinensis",
-    intensity: 0.72,
-    db: 48,
-    time: "14:23",
-    ago: "2m ago",
-    likes: 14,
-    listens: 47,
-    user: "Linh N.",
-    duration: "0:42",
-  },
-  {
-    id: 2,
-    lat: 10.781,
-    lng: 106.695,
-    type: "traffic",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Rush Hour Traffic",
-    species: null,
-    intensity: 0.91,
-    db: 76,
-    time: "14:21",
-    ago: "4m ago",
-    likes: 3,
-    listens: 22,
-    user: "Minh T.",
-    duration: "1:15",
-  },
-  {
-    id: 3,
-    lat: 10.774,
-    lng: 106.706,
-    type: "music",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Street Performer",
-    species: null,
-    intensity: 0.55,
-    db: 61,
-    time: "14:18",
-    ago: "7m ago",
-    likes: 31,
-    listens: 89,
-    user: "Hana V.",
-    duration: "2:03",
-  },
-  {
-    id: 4,
-    lat: 10.7825,
-    lng: 106.703,
-    type: "rain",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Light Drizzle",
-    species: null,
-    intensity: 0.38,
-    db: 39,
-    time: "14:15",
-    ago: "10m ago",
-    likes: 8,
-    listens: 33,
-    user: "Tran K.",
-    duration: "3:20",
-  },
-  {
-    id: 5,
-    lat: 10.7748,
-    lng: 106.6975,
-    type: "construction",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Building Site",
-    species: null,
-    intensity: 0.93,
-    db: 89,
-    time: "14:12",
-    ago: "13m ago",
-    likes: 1,
-    listens: 18,
-    user: "Duc N.",
-    duration: "0:58",
-  },
-  {
-    id: 6,
-    lat: 10.776,
-    lng: 106.7085,
-    type: "birds",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Red-whiskered Bulbul",
-    species: "Pycnonotus jocosus",
-    intensity: 0.68,
-    db: 52,
-    time: "14:09",
-    ago: "16m ago",
-    likes: 22,
-    listens: 61,
-    user: "Phuong L.",
-    duration: "1:34",
-  },
-  {
-    id: 7,
-    lat: 10.7795,
-    lng: 106.699,
-    type: "insects",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Evening Cicadas",
-    species: null,
-    intensity: 0.61,
-    db: 57,
-    time: "14:06",
-    ago: "19m ago",
-    likes: 17,
-    listens: 44,
-    user: "Nam H.",
-    duration: "0:31",
-  },
-  {
-    id: 8,
-    lat: 10.7732,
-    lng: 106.704,
-    type: "silence",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Quiet Garden",
-    species: null,
-    intensity: 0.18,
-    db: 28,
-    time: "14:03",
-    ago: "22m ago",
-    likes: 29,
-    listens: 73,
-    user: "Mai P.",
-    duration: "4:12",
-  },
-  {
-    id: 9,
-    lat: 10.778,
-    lng: 106.7055,
-    type: "birds",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Common Myna Colony",
-    species: "Acridotheres tristis",
-    intensity: 0.8,
-    db: 64,
-    time: "14:00",
-    ago: "25m ago",
-    likes: 11,
-    listens: 38,
-    user: "Bao T.",
-    duration: "1:07",
-  },
-  {
-    id: 10,
-    lat: 10.7715,
-    lng: 106.7015,
-    type: "traffic",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Intersection Rush",
-    species: null,
-    intensity: 0.88,
-    db: 82,
-    time: "13:57",
-    ago: "28m ago",
-    likes: 2,
-    listens: 15,
-    user: "Khoa N.",
-    duration: "2:45",
-  },
-  {
-    id: 11,
-    lat: 10.7837,
-    lng: 106.6868,
-    type: "music",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Jazz Bar Ambience",
-    species: null,
-    intensity: 0.62,
-    db: 65,
-    time: "21:10",
-    ago: "1h ago",
-    likes: 44,
-    listens: 112,
-    user: "Thu H.",
-    duration: "3:05",
-  },
-  {
-    id: 12,
-    lat: 10.7856,
-    lng: 106.6912,
-    type: "birds",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Tailor Bird Calls",
-    species: "Orthotomus sutorius",
-    intensity: 0.5,
-    db: 46,
-    time: "06:12",
-    ago: "8h ago",
-    likes: 19,
-    listens: 55,
-    user: "Lan P.",
-    duration: "0:55",
-  },
-  {
-    id: 13,
-    lat: 10.7322,
-    lng: 106.72,
-    type: "silence",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Riverside Dawn",
-    species: null,
-    intensity: 0.14,
-    db: 25,
-    time: "05:45",
-    ago: "9h ago",
-    likes: 38,
-    listens: 96,
-    user: "Ngoc B.",
-    duration: "5:00",
-  },
-  {
-    id: 14,
-    lat: 10.728,
-    lng: 106.715,
-    type: "birds",
-    location: "Ho Chi Minh City, Vietnam",
-    label: "Swamphen Wading",
-    species: "Porphyrio porphyrio",
-    intensity: 0.55,
-    db: 45,
-    time: "07:20",
-    ago: "7h ago",
-    likes: 26,
-    listens: 74,
-    user: "Huy D.",
-    duration: "1:18",
-  },
-  {
-    id: 15,
-    lat: 10.98,
-    lng: 106.65,
-    type: "birds",
-    location: "Binh Duong, Vietnam",
-    label: "Oriental Magpie-Robin",
-    species: "Copsychus saularis",
-    intensity: 0.73,
-    db: 53,
-    time: "06:30",
-    ago: "8h ago",
-    likes: 40,
-    listens: 118,
-    user: "Huong V.",
-    duration: "1:45",
-  },
-  {
-    id: 16,
-    lat: 10.945,
-    lng: 106.92,
-    type: "birds",
-    location: "Dong Nai, Vietnam",
-    label: "Peacock Display",
-    species: "Pavo cristatus",
-    intensity: 0.84,
-    db: 68,
-    time: "09:00",
-    ago: "5h ago",
-    likes: 48,
-    listens: 132,
-    user: "Hang N.",
-    duration: "2:20",
-  },
-  {
-    id: 17,
-    lat: 10.48,
-    lng: 107.11,
-    type: "birds",
-    location: "Vung Tau, Vietnam",
-    label: "Seabird Colony",
-    species: "Sterna hirundo",
-    intensity: 0.78,
-    db: 67,
-    time: "07:00",
-    ago: "8h ago",
-    likes: 37,
-    listens: 108,
-    user: "Binh L.",
-    duration: "1:55",
-  },
-  // ── Melbourne ──
-  {
-    id: 18,
-    lat: -37.8136,
-    lng: 144.9631,
-    type: "birds",
-    location: "Melbourne, Australia",
-    label: "Laughing Kookaburra",
-    species: "Dacelo novaeguineae",
-    intensity: 0.88,
-    db: 72,
-    time: "07:15",
-    ago: "3h ago",
-    likes: 94,
-    listens: 280,
-    user: "Jade W.",
-    duration: "0:38",
-  },
-  {
-    id: 19,
-    lat: -37.82,
-    lng: 144.955,
-    type: "traffic",
-    location: "Melbourne, Australia",
-    label: "Flinders St Tram",
-    species: null,
-    intensity: 0.82,
-    db: 74,
-    time: "08:30",
-    ago: "2h ago",
-    likes: 31,
-    listens: 88,
-    user: "Lachlan B.",
-    duration: "1:20",
-  },
-  {
-    id: 20,
-    lat: -37.806,
-    lng: 144.97,
-    type: "music",
-    location: "Melbourne, Australia",
-    label: "Busker on Bourke St",
-    species: null,
-    intensity: 0.65,
-    db: 63,
-    time: "12:00",
-    ago: "1h ago",
-    likes: 77,
-    listens: 199,
-    user: "Sienna T.",
-    duration: "2:45",
-  },
-  {
-    id: 21,
-    lat: -37.83,
-    lng: 144.98,
-    type: "birds",
-    location: "Melbourne, Australia",
-    label: "Sulphur-crested Cockatoo",
-    species: "Cacatua galerita",
-    intensity: 0.91,
-    db: 78,
-    time: "06:45",
-    ago: "4h ago",
-    likes: 108,
-    listens: 320,
-    user: "Oliver M.",
-    duration: "1:05",
-  },
-  {
-    id: 22,
-    lat: -37.79,
-    lng: 144.96,
-    type: "birds",
-    location: "Melbourne, Australia",
-    label: "Australian Magpie Carol",
-    species: "Gymnorhina tibicen",
-    intensity: 0.85,
-    db: 66,
-    time: "06:00",
-    ago: "5h ago",
-    likes: 129,
-    listens: 374,
-    user: "Matilda R.",
-    duration: "2:10",
-  },
-  {
-    id: 23,
-    lat: -37.815,
-    lng: 145.01,
-    type: "rain",
-    location: "Carlton, Melbourne",
-    label: "Carlton Gardens Rain",
-    species: null,
-    intensity: 0.6,
-    db: 54,
-    time: "15:00",
-    ago: "30m ago",
-    likes: 44,
-    listens: 121,
-    user: "Emma H.",
-    duration: "4:30",
-  },
-  {
-    id: 24,
-    lat: -37.84,
-    lng: 145.02,
-    type: "silence",
-    location: "South Yarra, Melbourne",
-    label: "Royal Botanic Dawn",
-    species: null,
-    intensity: 0.12,
-    db: 22,
-    time: "05:30",
-    ago: "6h ago",
-    likes: 88,
-    listens: 246,
-    user: "Chloe A.",
-    duration: "8:00",
-  },
-  {
-    id: 25,
-    lat: -37.775,
-    lng: 145.035,
-    type: "insects",
-    location: "Fitzroy, Melbourne",
-    label: "Fitzroy Garden Crickets",
-    species: null,
-    intensity: 0.59,
-    db: 55,
-    time: "21:00",
-    ago: "45m ago",
-    likes: 36,
-    listens: 98,
-    user: "Noah K.",
-    duration: "3:15",
-  },
-  {
-    id: 26,
-    lat: -37.86,
-    lng: 144.94,
-    type: "construction",
-    location: "Southbank, Melbourne",
-    label: "Southbank Crane Works",
-    species: null,
-    intensity: 0.94,
-    db: 91,
-    time: "09:00",
-    ago: "3h ago",
-    likes: 5,
-    listens: 19,
-    user: "James O.",
-    duration: "0:55",
-  },
-  {
-    id: 27,
-    lat: -37.802,
-    lng: 145.055,
-    type: "birds",
-    location: "Collingwood, Melbourne",
-    label: "Rainbow Lorikeet Flock",
-    species: "Trichoglossus moluccanus",
-    intensity: 0.79,
-    db: 69,
-    time: "07:30",
-    ago: "4h ago",
-    likes: 72,
-    listens: 211,
-    user: "Ava P.",
-    duration: "1:30",
-  },
-  {
-    id: 28,
-    lat: -37.87,
-    lng: 145.005,
-    type: "birds",
-    location: "St Kilda, Melbourne",
-    label: "Tawny Frogmouth Call",
-    species: "Podargus strigoides",
-    intensity: 0.42,
-    db: 44,
-    time: "22:30",
-    ago: "7h ago",
-    likes: 61,
-    listens: 178,
-    user: "Ethan C.",
-    duration: "0:22",
-  },
-  {
-    id: 29,
-    lat: -37.76,
-    lng: 144.93,
-    type: "music",
-    location: "Brunswick, Melbourne",
-    label: "Brunswick Festival DJ",
-    species: null,
-    intensity: 0.77,
-    db: 82,
-    time: "23:00",
-    ago: "8h ago",
-    likes: 53,
-    listens: 144,
-    user: "Zoe F.",
-    duration: "5:00",
-  },
-  {
-    id: 30,
-    lat: -37.848,
-    lng: 145.115,
-    type: "birds",
-    location: "Box Hill, Melbourne",
-    label: "Eastern Rosella",
-    species: "Platycercus eximius",
-    intensity: 0.66,
-    db: 58,
-    time: "08:10",
-    ago: "3h ago",
-    likes: 45,
-    listens: 130,
-    user: "Isla D.",
-    duration: "1:12",
-  },
-  {
-    id: 31,
-    lat: -37.826,
-    lng: 145.14,
-    type: "silence",
-    location: "Dandenong Ranges, Victoria",
-    label: "Dandenong Ranges Still",
-    species: null,
-    intensity: 0.06,
-    db: 17,
-    time: "11:00",
-    ago: "1h ago",
-    likes: 97,
-    listens: 268,
-    user: "Henry L.",
-    duration: "12:00",
-  },
-  {
-    id: 32,
-    lat: -37.91,
-    lng: 145.06,
-    type: "birds",
-    location: "Moorabbin, Melbourne",
-    label: "Willie Wagtail Dance",
-    species: "Rhipidura leucophrys",
-    intensity: 0.7,
-    db: 57,
-    time: "07:45",
-    ago: "4h ago",
-    likes: 66,
-    listens: 190,
-    user: "Lily S.",
-    duration: "0:48",
-  },
-  {
-    id: 33,
-    lat: -37.72,
-    lng: 144.88,
-    type: "insects",
-    location: "Sunshine, Melbourne",
-    label: "Dusk Bell Frogs",
-    species: "Litoria aurea",
-    intensity: 0.74,
-    db: 63,
-    time: "20:15",
-    ago: "2h ago",
-    likes: 49,
-    listens: 142,
-    user: "Charlie N.",
-    duration: "4:20",
-  },
-  // ── Sydney ──
-  {
-    id: 34,
-    lat: -33.8688,
-    lng: 151.2093,
-    type: "birds",
-    location: "Sydney, Australia",
-    label: "Sulphur Cockatoo Mob",
-    species: "Cacatua galerita",
-    intensity: 0.9,
-    db: 80,
-    time: "08:00",
-    ago: "2h ago",
-    likes: 82,
-    listens: 230,
-    user: "Sam W.",
-    duration: "1:40",
-  },
-  {
-    id: 35,
-    lat: -33.89,
-    lng: 151.19,
-    type: "music",
-    location: "Sydney, Australia",
-    label: "Opera House Soundcheck",
-    species: null,
-    intensity: 0.7,
-    db: 68,
-    time: "10:00",
-    ago: "1h ago",
-    likes: 115,
-    listens: 340,
-    user: "Ruby J.",
-    duration: "3:00",
-  },
-  {
-    id: 36,
-    lat: -33.86,
-    lng: 151.23,
-    type: "traffic",
-    location: "Sydney, Australia",
-    label: "Harbour Bridge Rumble",
-    species: null,
-    intensity: 0.86,
-    db: 77,
-    time: "07:30",
-    ago: "3h ago",
-    likes: 22,
-    listens: 66,
-    user: "Max T.",
-    duration: "2:00",
-  },
-  {
-    id: 37,
-    lat: -33.915,
-    lng: 151.255,
-    type: "birds",
-    location: "Bondi, Sydney",
-    label: "Currawong at Dusk",
-    species: "Strepera graculina",
-    intensity: 0.76,
-    db: 62,
-    time: "18:00",
-    ago: "4h ago",
-    likes: 58,
-    listens: 164,
-    user: "Mia G.",
-    duration: "0:55",
-  },
-  {
-    id: 38,
-    lat: -33.83,
-    lng: 151.27,
-    type: "rain",
-    location: "Manly, Sydney",
-    label: "Manly Beach Storm",
-    species: null,
-    intensity: 0.88,
-    db: 76,
-    time: "14:00",
-    ago: "5h ago",
-    likes: 43,
-    listens: 122,
-    user: "Jack B.",
-    duration: "6:45",
-  },
-  // ── Cairns ──
-  {
-    id: 39,
-    lat: -16.9186,
-    lng: 145.7781,
-    type: "birds",
-    location: "Cairns, Queensland",
-    label: "Cassowary Boom",
-    species: "Casuarius casuarius",
-    intensity: 0.78,
-    db: 71,
-    time: "06:00",
-    ago: "9h ago",
-    likes: 103,
-    listens: 305,
-    user: "Finn O.",
-    duration: "0:30",
-  },
-  {
-    id: 40,
-    lat: -16.87,
-    lng: 145.74,
-    type: "insects",
-    location: "Cairns, Queensland",
-    label: "Rainforest Night Choir",
-    species: null,
-    intensity: 0.82,
-    db: 74,
-    time: "21:30",
-    ago: "10h ago",
-    likes: 78,
-    listens: 226,
-    user: "Grace H.",
-    duration: "7:00",
-  },
-  // ── Perth ──
-  {
-    id: 41,
-    lat: -31.9505,
-    lng: 115.8605,
-    type: "birds",
-    location: "Perth, Australia",
-    label: "Carnaby Cockatoo",
-    species: "Zanda latirostris",
-    intensity: 0.8,
-    db: 67,
-    time: "08:30",
-    ago: "4h ago",
-    likes: 71,
-    listens: 204,
-    user: "Freya M.",
-    duration: "1:10",
-  },
-  {
-    id: 42,
-    lat: -31.97,
-    lng: 115.84,
-    type: "silence",
-    location: "Perth, Australia",
-    label: "Kings Park at Sunrise",
-    species: null,
-    intensity: 0.08,
-    db: 19,
-    time: "05:45",
-    ago: "7h ago",
-    likes: 86,
-    listens: 240,
-    user: "Oscar R.",
-    duration: "9:00",
-  },
-  {
-    id: 43,
-    lat: -31.93,
-    lng: 115.88,
-    type: "insects",
-    location: "Swan River, Perth",
-    label: "Swan River Crickets",
-    species: null,
-    intensity: 0.65,
-    db: 60,
-    time: "19:30",
-    ago: "3h ago",
-    likes: 34,
-    listens: 95,
-    user: "Willow P.",
-    duration: "2:50",
-  },
-  // ── London ──
-  {
-    id: 44,
-    lat: 51.5074,
-    lng: -0.1278,
-    type: "birds",
-    location: "London, UK",
-    label: "Robin in Hyde Park",
-    species: "Erithacus rubecula",
-    intensity: 0.62,
-    db: 50,
-    time: "07:00",
-    ago: "5h ago",
-    likes: 88,
-    listens: 255,
-    user: "William C.",
-    duration: "1:05",
-  },
-  {
-    id: 45,
-    lat: 51.515,
-    lng: -0.095,
-    type: "traffic",
-    location: "London, UK",
-    label: "Oxford St Buses",
-    species: null,
-    intensity: 0.9,
-    db: 84,
-    time: "09:00",
-    ago: "3h ago",
-    likes: 18,
-    listens: 52,
-    user: "Sophie A.",
-    duration: "1:45",
-  },
-  {
-    id: 46,
-    lat: 51.499,
-    lng: -0.175,
-    type: "music",
-    location: "Southbank, London",
-    label: "Busker at South Bank",
-    species: null,
-    intensity: 0.68,
-    db: 65,
-    time: "14:00",
-    ago: "2h ago",
-    likes: 63,
-    listens: 181,
-    user: "Alfie T.",
-    duration: "3:20",
-  },
-  {
-    id: 47,
-    lat: 51.52,
-    lng: -0.08,
-    type: "rain",
-    location: "Shoreditch, London",
-    label: "Shoreditch Rain",
-    species: null,
-    intensity: 0.55,
-    db: 52,
-    time: "16:30",
-    ago: "1h ago",
-    likes: 47,
-    listens: 134,
-    user: "Poppy S.",
-    duration: "5:00",
-  },
-  // ── Paris ──
-  {
-    id: 48,
-    lat: 48.8566,
-    lng: 2.3522,
-    type: "birds",
-    location: "Paris, France",
-    label: "Blackbird in Tuileries",
-    species: "Turdus merula",
-    intensity: 0.7,
-    db: 54,
-    time: "06:30",
-    ago: "6h ago",
-    likes: 74,
-    listens: 212,
-    user: "Claire M.",
-    duration: "1:30",
-  },
-  {
-    id: 49,
-    lat: 48.873,
-    lng: 2.3,
-    type: "music",
-    location: "Montmartre, Paris",
-    label: "Accordion Place du Tertre",
-    species: null,
-    intensity: 0.6,
-    db: 61,
-    time: "11:00",
-    ago: "2h ago",
-    likes: 98,
-    listens: 284,
-    user: "Hugo B.",
-    duration: "4:00",
-  },
-  {
-    id: 50,
-    lat: 48.845,
-    lng: 2.37,
-    type: "traffic",
-    location: "Paris, France",
-    label: "Boulevard Saint-Germain",
-    species: null,
-    intensity: 0.84,
-    db: 78,
-    time: "08:00",
-    ago: "4h ago",
-    likes: 15,
-    listens: 44,
-    user: "Camille D.",
-    duration: "2:00",
-  },
-  // ── Tokyo ──
-  {
-    id: 51,
-    lat: 35.6762,
-    lng: 139.6503,
-    type: "birds",
-    location: "Tokyo, Japan",
-    label: "Japanese Bush Warbler",
-    species: "Horornis diphone",
-    intensity: 0.58,
-    db: 48,
-    time: "06:00",
-    ago: "7h ago",
-    likes: 92,
-    listens: 270,
-    user: "Haruki S.",
-    duration: "0:45",
-  },
-  {
-    id: 52,
-    lat: 35.69,
-    lng: 139.7,
-    type: "traffic",
-    location: "Shibuya, Tokyo",
-    label: "Shibuya Crossing Roar",
-    species: null,
-    intensity: 0.96,
-    db: 88,
-    time: "18:00",
-    ago: "3h ago",
-    likes: 67,
-    listens: 196,
-    user: "Yuki T.",
-    duration: "1:10",
-  },
-  {
-    id: 53,
-    lat: 35.658,
-    lng: 139.745,
-    type: "music",
-    location: "Harajuku, Tokyo",
-    label: "Harajuku Idol Group",
-    species: null,
-    intensity: 0.73,
-    db: 70,
-    time: "15:00",
-    ago: "2h ago",
-    likes: 55,
-    listens: 162,
-    user: "Aoi N.",
-    duration: "3:30",
-  },
-  {
-    id: 54,
-    lat: 35.71,
-    lng: 139.81,
-    type: "silence",
-    location: "Shinjuku, Tokyo",
-    label: "Shinjuku Gyoen at Dusk",
-    species: null,
-    intensity: 0.1,
-    db: 24,
-    time: "17:30",
-    ago: "1h ago",
-    likes: 84,
-    listens: 236,
-    user: "Ren K.",
-    duration: "6:00",
-  },
-  {
-    id: 55,
-    lat: 35.635,
-    lng: 139.88,
-    type: "insects",
-    location: "Chiba, Japan",
-    label: "Summer Cicadas",
-    species: "Cryptotympana facialis",
-    intensity: 0.88,
-    db: 82,
-    time: "13:00",
-    ago: "4h ago",
-    likes: 71,
-    listens: 208,
-    user: "Mei O.",
-    duration: "2:20",
-  },
-  // ── Singapore ──
-  {
-    id: 56,
-    lat: 1.3521,
-    lng: 103.8198,
-    type: "birds",
-    location: "Singapore",
-    label: "Asian Koel",
-    species: "Eudynamys scolopaceus",
-    intensity: 0.82,
-    db: 71,
-    time: "05:30",
-    ago: "8h ago",
-    likes: 61,
-    listens: 178,
-    user: "Priya R.",
-    duration: "0:35",
-  },
-  {
-    id: 57,
-    lat: 1.28,
-    lng: 103.85,
-    type: "rain",
-    location: "Singapore",
-    label: "Tropical Monsoon",
-    species: null,
-    intensity: 0.92,
-    db: 85,
-    time: "15:00",
-    ago: "2h ago",
-    likes: 39,
-    listens: 112,
-    user: "Wei L.",
-    duration: "5:30",
-  },
-  {
-    id: 58,
-    lat: 1.3,
-    lng: 103.77,
-    type: "insects",
-    location: "Bukit Timah, Singapore",
-    label: "Bukit Timah Night",
-    species: null,
-    intensity: 0.78,
-    db: 69,
-    time: "20:00",
-    ago: "3h ago",
-    likes: 55,
-    listens: 158,
-    user: "Selin A.",
-    duration: "4:00",
-  },
-  // ── New York ──
-  {
-    id: 59,
-    lat: 40.7128,
-    lng: -74.006,
-    type: "traffic",
-    location: "New York, USA",
-    label: "Manhattan Midday",
-    species: null,
-    intensity: 0.95,
-    db: 89,
-    time: "12:00",
-    ago: "1h ago",
-    likes: 28,
-    listens: 82,
-    user: "Tyler M.",
-    duration: "2:30",
-  },
-  {
-    id: 60,
-    lat: 40.7484,
-    lng: -73.9967,
-    type: "music",
-    location: "Central Park, New York",
-    label: "Jazz in Central Park",
-    species: null,
-    intensity: 0.65,
-    db: 62,
-    time: "14:00",
-    ago: "3h ago",
-    likes: 119,
-    listens: 346,
-    user: "Maria S.",
-    duration: "6:00",
-  },
-  {
-    id: 61,
-    lat: 40.7282,
-    lng: -74.0776,
-    type: "birds",
-    location: "New Jersey, USA",
-    label: "Red-tailed Hawk",
-    species: "Buteo jamaicensis",
-    intensity: 0.54,
-    db: 46,
-    time: "08:00",
-    ago: "5h ago",
-    likes: 76,
-    listens: 218,
-    user: "Alex P.",
-    duration: "0:40",
-  },
-  {
-    id: 62,
-    lat: 40.7614,
-    lng: -73.9776,
-    type: "rain",
-    location: "Brooklyn, New York",
-    label: "Brooklyn Thunderstorm",
-    species: null,
-    intensity: 0.88,
-    db: 80,
-    time: "17:00",
-    ago: "4h ago",
-    likes: 52,
-    listens: 148,
-    user: "Jasmine R.",
-    duration: "7:00",
-  },
-  // ── San Francisco ──
-  {
-    id: 63,
-    lat: 37.7749,
-    lng: -122.4194,
-    type: "birds",
-    location: "San Francisco, USA",
-    label: "Anna's Hummingbird",
-    species: "Calypte anna",
-    intensity: 0.45,
-    db: 40,
-    time: "09:00",
-    ago: "4h ago",
-    likes: 83,
-    listens: 238,
-    user: "Casey L.",
-    duration: "0:28",
-  },
-  {
-    id: 64,
-    lat: 37.8,
-    lng: -122.44,
-    type: "music",
-    location: "San Francisco, USA",
-    label: "Golden Gate Busker",
-    species: null,
-    intensity: 0.58,
-    db: 59,
-    time: "13:00",
-    ago: "2h ago",
-    likes: 67,
-    listens: 193,
-    user: "River S.",
-    duration: "3:45",
-  },
-  // ── Rio de Janeiro ──
-  {
-    id: 65,
-    lat: -22.9068,
-    lng: -43.1729,
-    type: "music",
-    location: "Rio de Janeiro, Brazil",
-    label: "Samba on Ipanema",
-    species: null,
-    intensity: 0.8,
-    db: 75,
-    time: "20:00",
-    ago: "1h ago",
-    likes: 134,
-    listens: 392,
-    user: "Ana B.",
-    duration: "4:15",
-  },
-  {
-    id: 66,
-    lat: -22.9519,
-    lng: -43.2105,
-    type: "birds",
-    location: "Tijuca, Rio de Janeiro",
-    label: "Toucan in Tijuca",
-    species: "Ramphastos toco",
-    intensity: 0.75,
-    db: 62,
-    time: "07:00",
-    ago: "6h ago",
-    likes: 99,
-    listens: 290,
-    user: "Lucas F.",
-    duration: "1:00",
-  },
-  {
-    id: 67,
-    lat: -22.98,
-    lng: -43.19,
-    type: "rain",
-    location: "Rio de Janeiro, Brazil",
-    label: "Atlantic Forest Rain",
-    species: null,
-    intensity: 0.84,
-    db: 74,
-    time: "14:00",
-    ago: "3h ago",
-    likes: 61,
-    listens: 174,
-    user: "Isabela M.",
-    duration: "8:30",
-  },
-  // ── Cape Town ──
-  {
-    id: 68,
-    lat: -33.9249,
-    lng: 18.4241,
-    type: "birds",
-    location: "Cape Town, South Africa",
-    label: "Cape Sugarbird",
-    species: "Promerops cafer",
-    intensity: 0.66,
-    db: 53,
-    time: "08:00",
-    ago: "5h ago",
-    likes: 77,
-    listens: 222,
-    user: "Amara N.",
-    duration: "1:20",
-  },
-  {
-    id: 69,
-    lat: -33.96,
-    lng: 18.4,
-    type: "silence",
-    location: "Table Mountain, Cape Town",
-    label: "Table Mountain Stillness",
-    species: null,
-    intensity: 0.05,
-    db: 16,
-    time: "11:00",
-    ago: "2h ago",
-    likes: 92,
-    listens: 264,
-    user: "Sipho D.",
-    duration: "10:00",
-  },
-  {
-    id: 70,
-    lat: -33.9,
-    lng: 18.46,
-    type: "music",
-    location: "Cape Town, South Africa",
-    label: "Township Jazz",
-    species: null,
-    intensity: 0.72,
-    db: 68,
-    time: "21:00",
-    ago: "30m ago",
-    likes: 85,
-    listens: 245,
-    user: "Lerato K.",
-    duration: "5:00",
-  },
-  // ── Nairobi ──
-  {
-    id: 71,
-    lat: -1.2921,
-    lng: 36.8219,
-    type: "birds",
-    location: "Nairobi, Kenya",
-    label: "Grey Crowned Crane",
-    species: "Balearica regulorum",
-    intensity: 0.77,
-    db: 66,
-    time: "06:30",
-    ago: "7h ago",
-    likes: 88,
-    listens: 254,
-    user: "Amina W.",
-    duration: "1:35",
-  },
-  {
-    id: 72,
-    lat: -1.31,
-    lng: 36.8,
-    type: "insects",
-    location: "Nairobi, Kenya",
-    label: "Savanna Night Sounds",
-    species: null,
-    intensity: 0.8,
-    db: 70,
-    time: "20:30",
-    ago: "4h ago",
-    likes: 66,
-    listens: 190,
-    user: "Kofi A.",
-    duration: "5:45",
-  },
-  // ── Reykjavik ──
-  {
-    id: 73,
-    lat: 64.1265,
-    lng: -21.8174,
-    type: "silence",
-    location: "Reykjavik, Iceland",
-    label: "Arctic Stillness",
-    species: null,
-    intensity: 0.03,
-    db: 14,
-    time: "00:00",
-    ago: "1h ago",
-    likes: 112,
-    listens: 328,
-    user: "Sigrid E.",
-    duration: "15:00",
-  },
-  {
-    id: 74,
-    lat: 64.15,
-    lng: -21.95,
-    type: "birds",
-    location: "Reykjavik, Iceland",
-    label: "Puffin Colony",
-    species: "Fratercula arctica",
-    intensity: 0.72,
-    db: 63,
-    time: "10:00",
-    ago: "3h ago",
-    likes: 104,
-    listens: 302,
-    user: "Björn H.",
-    duration: "2:30",
-  },
-  // ── Amazon ──
-  {
-    id: 75,
-    lat: -3.4653,
-    lng: -62.2159,
-    type: "birds",
-    location: "Amazon Rainforest, Brazil",
-    label: "Harpy Eagle Call",
-    species: "Harpia harpyja",
-    intensity: 0.86,
-    db: 75,
-    time: "06:00",
-    ago: "10h ago",
-    likes: 148,
-    listens: 436,
-    user: "Eduardo S.",
-    duration: "0:18",
-  },
-  {
-    id: 76,
-    lat: -3.5,
-    lng: -62.5,
-    type: "insects",
-    location: "Amazon Rainforest, Brazil",
-    label: "Amazon Night Orchestra",
-    species: null,
-    intensity: 0.95,
-    db: 88,
-    time: "22:00",
-    ago: "8h ago",
-    likes: 132,
-    listens: 389,
-    user: "Valentina P.",
-    duration: "10:00",
-  },
-];
+// ─── Convex / Elastic are the only pin sources ─────────────────────────────
 
 // ─── Convex helpers ────────────────────────────────────────────────────────────
 
@@ -1449,6 +121,12 @@ function mapConvexUpload(u: ConvexUpload, idx: number): Pin {
     duration: u.durationSeconds ? formatDuration(u.durationSeconds) : "?:??",
     location: u.locationLabel ?? "Unknown location",
     storageId: u.storageId,
+    gifStorageId: u.gifStorageId,
+    videoStorageId: u.videoStorageId,
+    gifStatus: u.gifStatus,
+    videoStatus: u.videoStatus,
+    uploadId: u._id,
+    userId: u.userId,
   };
 }
 
@@ -1494,136 +172,6 @@ function searchPins(pins: Pin[], query: string): Pin[] {
     .map((x: any) => x.pin);
 }
 
-// ─── Clustering ───────────────────────────────────────────────────────────────
-function computeItems(pins: Pin[], map: MapLibreGL.Map | null): MapItem[] {
-  if (!map) return pins.map((p) => ({ kind: "single", pin: p }));
-  const DIST = 60;
-  const used = new Set<number>();
-  const items: MapItem[] = [];
-  const pts = pins.map((p) => {
-    const px = map.project([p.lng, p.lat]);
-    return { pin: p, px };
-  });
-  for (let i = 0; i < pts.length; i++) {
-    if (used.has(i)) continue;
-    const g = [i];
-    for (let j = i + 1; j < pts.length; j++) {
-      if (used.has(j)) continue;
-      const dx = pts[i].px.x - pts[j].px.x,
-        dy = pts[i].px.y - pts[j].px.y;
-      if (Math.sqrt(dx * dx + dy * dy) < DIST) {
-        g.push(j);
-        used.add(j);
-      }
-    }
-    used.add(i);
-    if (g.length === 1) {
-      items.push({ kind: "single", pin: pts[i].pin });
-    } else {
-      const gp = g.map((idx) => pts[idx].pin);
-      const lat = gp.reduce((s, p) => s + p.lat, 0) / gp.length;
-      const lng = gp.reduce((s, p) => s + p.lng, 0) / gp.length;
-      const freq: Record<string, number> = {};
-      gp.forEach((p) => {
-        freq[p.type] = (freq[p.type] || 0) + 1;
-      });
-      const dominantType = Object.entries(freq).sort(
-        (a, b) => b[1] - a[1],
-      )[0][0] as SoundType;
-      items.push({ kind: "cluster", lat, lng, pins: gp, dominantType });
-    }
-  }
-  return items;
-}
-
-// ─── Cluster color helper ─────────────────────────────────────────────────────
-function clusterBg(count: number): string {
-  const t = Math.max(0, Math.min(1, (count - 1) / 30));
-  const lerp = (a: number, b: number, x: number) => a + (b - a) * x;
-  const hexToRgb = (hex: string) => {
-    const h = hex.replace("#", "").trim();
-    const full =
-      h.length === 3
-        ? h
-            .split("")
-            .map((c) => c + c)
-            .join("")
-        : h;
-    const n = Number.parseInt(full, 16);
-    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
-  };
-  const mix = (
-    a: { r: number; g: number; b: number },
-    b: { r: number; g: number; b: number },
-    x: number,
-  ) => ({
-    r: Math.round(lerp(a.r, b.r, x)),
-    g: Math.round(lerp(a.g, b.g, x)),
-    b: Math.round(lerp(a.b, b.b, x)),
-  });
-  const token = hexToRgb("#4A9B3F");
-  const surface = hexToRgb("#1E2118");
-  const text = hexToRgb("#EDE8DC");
-  const light = mix(token, text, 0.38);
-  const dark = mix(token, surface, 0.72);
-  const c = mix(light, dark, t);
-  return `rgb(${c.r} ${c.g} ${c.b})`;
-}
-
-// ─── Map keyframes (injected once) ──────────────────────────────────────────
-function MapKeyframes() {
-  useEffect(() => {
-    const id = "soundmap-keyframes";
-    if (document.getElementById(id)) return;
-    const el = document.createElement("style");
-    el.id = id;
-    el.textContent = `
-      @keyframes birdFloat     { 0%,100%{transform:translateY(0)}    50%{transform:translateY(-4px)} }
-      @keyframes carDrift      { 0%,100%{transform:translateX(0)}    50%{transform:translateX(3px)} }
-      @keyframes musicSway     { 0%,100%{transform:rotate(-4deg) scale(1)} 50%{transform:rotate(4deg) scale(1.08)} }
-      @keyframes rainDrop      { 0%,100%{transform:translateY(-2px)} 50%{transform:translateY(2px)} }
-      @keyframes constNod      { 0%,100%{transform:rotate(0deg)}     50%{transform:rotate(2deg)} }
-      @keyframes insectHover   { 0%,100%{transform:translateY(0) rotate(-4deg)} 50%{transform:translateY(-3px) rotate(4deg)} }
-      @keyframes silenceBreathe{ 0%,100%{opacity:0.45;transform:scale(0.92)} 50%{opacity:1;transform:scale(1.04)} }
-    `;
-    document.head.appendChild(el);
-    return () => el.remove();
-  }, []);
-  return null;
-}
-
-// ─── Cluster tracker (MapLibre) ───────────────────────────────────────────────
-function ClusterTracker({
-  pins,
-  onItems,
-  onZoom,
-}: {
-  pins: Pin[];
-  onItems: (i: MapItem[]) => void;
-  onZoom: (z: number) => void;
-}) {
-  const { map, isLoaded } = useMap();
-
-  useEffect(() => {
-    if (!map || !isLoaded) return;
-
-    const update = () => {
-      onZoom(Math.round(map.getZoom()));
-      onItems(computeItems(pins, map));
-    };
-    update();
-
-    map.on("moveend", update);
-    map.on("zoomend", update);
-    return () => {
-      map.off("moveend", update);
-      map.off("zoomend", update);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [map, isLoaded, pins]);
-
-  return null;
-}
 
 // ─── Waveform ─────────────────────────────────────────────────────────────────
 // When `amplitudes` is provided (0–1 per bar), bars respond to live audio levels.
@@ -1651,7 +199,11 @@ function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] 
               height: `${liveH}%`,
               opacity: isLive ? 0.35 + amp * 0.65 : 0.8,
               transition: isLive ? "height 0.06s ease-out, opacity 0.06s ease-out" : "none",
-              animation: isLive ? "none" : `wv${i % 3} ${0.85 + (i % 5) * 0.12}s ease-in-out infinite alternate`,
+              animationName: isLive ? "none" : `wv${i % 3}`,
+              animationDuration: isLive ? "0s" : `${0.85 + (i % 5) * 0.12}s`,
+              animationTimingFunction: "ease-in-out",
+              animationIterationCount: "infinite",
+              animationDirection: "alternate",
               animationDelay: isLive ? "0s" : `${i * 0.05}s`,
             }}
           />
@@ -1661,187 +213,25 @@ function Waveform({ color, amplitudes }: { color: string; amplitudes?: number[] 
   );
 }
 
-// ─── Cluster panel ────────────────────────────────────────────────────────────
-function ClusterPanel({
-  cluster,
-  onClose,
-  onSelectPin,
-}: {
-  cluster: Cluster;
-  onClose: () => void;
-  onSelectPin: (pin: Pin) => void;
-}) {
-  const typeCounts: Record<string, number> = {};
-  cluster.pins.forEach((p) => {
-    typeCounts[p.type] = (typeCounts[p.type] || 0) + 1;
-  });
-
-  return (
-    <>
-      <div
-        style={{
-          padding: "22px 20px 16px",
-          borderBottom: "1px solid rgba(255,255,255,.07)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 14,
-          }}
-        >
-          <h2
-            style={{
-              color: "#f8fafc",
-              fontSize: 18,
-              fontWeight: 700,
-              margin: 0,
-              letterSpacing: -0.3,
-            }}
-          >
-            {cluster.pins.length} recordings
-          </h2>
-          <button
-            onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              color: "rgba(255,255,255,.35)",
-              cursor: "pointer",
-              fontSize: 20,
-              padding: "0 2px",
-              lineHeight: 1,
-            }}
-          >
-            ×
-          </button>
-        </div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-          {Object.entries(typeCounts)
-            .sort((a, b) => b[1] - a[1])
-            .map(([type, count]) => {
-              const cfg = CFG[type as SoundType];
-              return (
-                <span
-                  key={type}
-                  style={{
-                    background: "rgba(255,255,255,.06)",
-                    border: "1px solid rgba(255,255,255,.1)",
-                    borderRadius: 20,
-                    padding: "3px 10px",
-                    color: "rgba(255,255,255,.6)",
-                    fontSize: 11,
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 4,
-                  }}
-                >
-                  <span>{cfg.icon}</span>
-                  <span>
-                    {count} {cfg.label}
-                  </span>
-                </span>
-              );
-            })}
-        </div>
-        <p
-          style={{
-            color: "rgba(255,255,255,.3)",
-            fontSize: 11,
-            margin: "10px 0 0",
-          }}
-        >
-          Tap a recording to open it, or zoom in
-        </p>
-      </div>
-      <div style={{ flex: 1, overflowY: "auto", padding: "12px 20px" }}>
-        {cluster.pins.map((p) => {
-          const cfg = CFG[p.type];
-          return (
-            <button
-              key={p.id}
-              onClick={() => onSelectPin(p)}
-              style={{
-                width: "100%",
-                background: "none",
-                border: "none",
-                padding: 0,
-                cursor: "pointer",
-                textAlign: "left",
-                marginBottom: 6,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 12px",
-                  background: "rgba(255,255,255,.03)",
-                  border: "1px solid rgba(255,255,255,.05)",
-                  borderRadius: 10,
-                  transition: "background .15s",
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = "rgba(255,255,255,.07)")
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = "rgba(255,255,255,.03)")
-                }
-              >
-                <span style={{ fontSize: 20, flexShrink: 0 }}>{cfg.icon}</span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div
-                    style={{
-                      color: "#f1f5f9",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {p.label}
-                  </div>
-                  <div
-                    style={{
-                      color: "rgba(255,255,255,.3)",
-                      fontSize: 11,
-                      marginTop: 1,
-                    }}
-                  >
-                    {p.location} · {p.ago}
-                  </div>
-                </div>
-                <svg
-                  width={14}
-                  height={14}
-                  fill="none"
-                  stroke="rgba(255,255,255,.2)"
-                  strokeWidth={1.8}
-                  style={{ flexShrink: 0 }}
-                >
-                  <polyline points="5,3 10,7 5,11" />
-                </svg>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </>
-  );
-}
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
+function useIsMobile(breakpoint = 640) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
+    setIsMobile(mql.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener("change", handler);
+    return () => mql.removeEventListener("change", handler);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function SoundMapInner() {
+  const isMobile = useIsMobile();
   const [selected, setSelected] = useState<Pin | null>(null);
-  const [selectedCluster, setSelectedCluster] = useState<Cluster | null>(null);
   const [filter, setFilter] = useState<"all" | SoundType>("all");
   const [playing, setPlaying] = useState(false);
-  const [mapItems, setMapItems] = useState<MapItem[]>([]);
-  const [, setZoom] = useState(3);
   const [searchQuery, setSearchQuery] = useState("");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
@@ -2047,7 +437,7 @@ export default function SoundMapInner() {
     );
   }, [nearMeLocation]);
 
-  // Merge: static PINS + Convex uploads + Elastic results
+  // Merge: Convex uploads + Elastic results
   const allPins = useMemo<Pin[]>(() => {
     const fromConvex = (convexUploads ?? [])
       .filter((u) => u.lat !== undefined && u.lon !== undefined)
@@ -2062,7 +452,6 @@ export default function SoundMapInner() {
     const isLivePin = (p: Pin) => !p.uploadId || convexIds.has(p.uploadId);
 
     const combined = [
-      ...PINS,
       ...fromConvex,
       ...elasticPins.filter(isLivePin),
       ...elasticFilterPins.filter(isLivePin),
@@ -2070,7 +459,6 @@ export default function SoundMapInner() {
     ];
 
     // Deduplicate by canonical upload ID (everything after the second dash).
-    // Static demo PINS have plain numeric IDs and fall through unchanged.
     const uniqueMap = new globalThis.Map<string, Pin>();
     combined.forEach((pin) => {
       const idStr = pin.id.toString();
@@ -2109,6 +497,25 @@ export default function SoundMapInner() {
     [categoryPins, searchQuery],
   );
 
+  // Convert visible pins to GeoJSON for MapClusterLayer
+  const geojsonData = useMemo<GeoJSON.FeatureCollection<GeoJSON.Point>>(
+    () => ({
+      type: "FeatureCollection",
+      features: visiblePins.map((pin) => ({
+        type: "Feature" as const,
+        geometry: {
+          type: "Point" as const,
+          coordinates: [pin.lng, pin.lat],
+        },
+        properties: {
+          id: pin.id.toString(),
+          type: pin.type,
+        },
+      })),
+    }),
+    [visiblePins],
+  );
+
   // ── Live data for the selected pin (real-time likes / listens) ──
   const liveUpload = useQuery(
     api.uploads.getById,
@@ -2122,25 +529,31 @@ export default function SoundMapInner() {
   );
 
   const S = selected ? CFG[selected.type] : null;
-  const panelOpen = selected !== null || selectedCluster !== null;
+  const panelOpen = selected !== null;
 
-  const handleItems = useCallback((items: MapItem[]) => setMapItems(items), []);
-  const handleZoom = useCallback((z: number) => setZoom(z), []);
   const closePanel = () => {
     setSelected(null);
-    setSelectedCluster(null);
   };
 
   // ── Smooth flyTo on pin/cluster selection ──
   const selectPin = useCallback((pin: Pin) => {
     setSelected((p) => (p?.id === pin.id ? null : pin));
-    setSelectedCluster(null);
     mapRef.current?.flyTo({
       center: [pin.lng, pin.lat],
       zoom: Math.max(mapRef.current.getZoom(), 12),
       duration: 1200,
     });
   }, []);
+
+  // Handle point click from MapClusterLayer
+  const handlePointClick = useCallback(
+    (feature: GeoJSON.Feature<GeoJSON.Point>, _coordinates: [number, number]) => {
+      const pinId = feature.properties?.id;
+      const pin = visiblePins.find((p) => p.id.toString() === pinId);
+      if (pin) selectPin(pin);
+    },
+    [visiblePins, selectPin],
+  );
 
   // ── Auto-select pin from deep-link (?upload=<uploadId>) ──
   useEffect(() => {
@@ -2151,44 +564,6 @@ export default function SoundMapInner() {
     selectPin(target);
   }, [deepLinkUploadId, allPins, selectPin]);
 
-  const selectCluster = useCallback((cluster: Cluster) => {
-    setSelectedCluster(cluster);
-    setSelected(null);
-    const map = mapRef.current;
-    if (!map) return;
-
-    const lngs = cluster.pins.map((p) => p.lng);
-    const lats = cluster.pins.map((p) => p.lat);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-
-    // All pins at essentially the same spot — just fly there
-    if (maxLng - minLng < 1e-5 && maxLat - minLat < 1e-5) {
-      map.flyTo({
-        center: [cluster.lng, cluster.lat],
-        zoom: 16,
-        duration: 900,
-        essential: true,
-      });
-      return;
-    }
-
-    // Fit the viewport to the bounding box of all cluster pins.
-    // Large geographic clusters → less zoom; tight clusters → more zoom.
-    // maxZoom is relaxed for small clusters and stricter for large ones so
-    // the map never over-zooms into empty space.
-    const spanDeg = Math.max(maxLng - minLng, (maxLat - minLat) * 1.5);
-    const maxZoom = spanDeg > 0.5 ? 13 : spanDeg > 0.1 ? 15 : 17;
-
-    map.fitBounds([[minLng, minLat], [maxLng, maxLat]], {
-      padding: 100,
-      maxZoom,
-      duration: 900,
-      essential: true,
-    });
-  }, []);
 
   // Called after a successful upload — Convex query auto-refreshes so the pin
   // will appear once the query refetches (or immediately if optimistic)
@@ -2234,11 +609,14 @@ export default function SoundMapInner() {
         theme="dark"
         className="w-full h-full"
       >
-        <MapKeyframes />
-        <ClusterTracker
-          pins={visiblePins}
-          onItems={handleItems}
-          onZoom={handleZoom}
+        <MapClusterLayer
+          data={geojsonData}
+          clusterRadius={60}
+          clusterMaxZoom={14}
+          clusterColors={["#4A9B3F", "#eab308", "#ef4444"]}
+          clusterThresholds={[5, 15]}
+          pointColor="#3b82f6"
+          onPointClick={handlePointClick}
         />
         <MapControls
           position="bottom-right"
@@ -2246,96 +624,25 @@ export default function SoundMapInner() {
           showCompass
           showLocate
         />
-        {mapItems.map((item, idx) =>
-          item.kind === "single" ? (
-            <MapMarker
-              key={`s-${item.pin.id}`}
-              longitude={item.pin.lng}
-              latitude={item.pin.lat}
-              onClick={() => selectPin(item.pin)}
-            >
-              <MarkerContent>
-                <span
-                  style={{
-                    fontSize: 22,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: 32,
-                    height: 32,
-                    borderRadius: 9999,
-                    background: "rgba(0,0,0,0.45)",
-                    boxShadow: "0 0 0 2px #fff, 0 4px 8px rgba(0,0,0,0.7)",
-                    lineHeight: 1,
-                    cursor: "pointer",
-                    userSelect: "none",
-                    animation: `${ANIM[item.pin.type].name} ${ANIM[item.pin.type].dur} ${ANIM[item.pin.type].timing} infinite`,
-                  }}
-                >
-                  {CFG[item.pin.type].icon}
-                </span>
-              </MarkerContent>
-            </MapMarker>
-          ) : (
-            <MapMarker
-              key={`c-${idx}`}
-              longitude={item.lng}
-              latitude={item.lat}
-              onClick={() => selectCluster(item)}
-            >
-              <MarkerContent>
-                {(() => {
-                  const count = item.pins.length;
-                  const size = count >= 30 ? 50 : count >= 15 ? 42 : count >= 5 ? 36 : 32;
-                  const fs = count >= 30 ? 16 : count >= 15 ? 14 : 12;
-                  return (
-                    <div
-                      style={{
-                        width: size,
-                        height: size,
-                        borderRadius: "50%",
-                        background: clusterBg(count),
-                        border: "2px solid rgba(255,255,255,0.90)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "#EDE8DC",
-                          fontSize: fs,
-                          fontWeight: 900,
-                          letterSpacing: -0.5,
-                        }}
-                      >
-                        {count}
-                      </span>
-                    </div>
-                  );
-                })()}
-              </MarkerContent>
-            </MapMarker>
-          ),
-        )}
       </MapLibre>
 
       {/* ── SEARCH BAR (only top UI element) ── */}
       <div
         style={{
           position: "absolute",
-          top: 20,
-          left: "50%",
-          transform: "translateX(-50%)",
+          top: isMobile ? 56 : 20,
+          left: isMobile ? 12 : "50%",
+          right: isMobile ? 12 : "auto",
+          transform: isMobile ? "none" : "translateX(-50%)",
           zIndex: 1000,
           display: "flex",
+          flexWrap: isMobile ? "wrap" : "nowrap",
           gap: 8,
           alignItems: "flex-start",
         }}
       >
         {/* Search + dropdown wrapper */}
-        <div ref={dropdownRef} style={{ width: 400 }}>
+        <div ref={dropdownRef} style={{ width: isMobile ? "100%" : 400 }}>
           {/* Input row */}
           <div
             style={{
@@ -2634,9 +941,9 @@ export default function SoundMapInner() {
         <div
           style={{
             position: "absolute",
-            left: 20,
-            bottom: 24,
-            zIndex: 1000,
+            left: isMobile ? 12 : 20,
+            bottom: isMobile ? 12 : 24,
+            zIndex: 998,
             background: "rgba(12,12,12,.85)",
             backdropFilter: "blur(16px)",
             border: "1px solid rgba(255,255,255,.1)",
@@ -2668,36 +975,33 @@ export default function SoundMapInner() {
       <div
         style={{
           position: "absolute",
-          top: 0,
+          top: isMobile ? "auto" : 0,
           right: 0,
           bottom: 0,
-          width: 360,
+          left: isMobile ? 0 : "auto",
+          width: isMobile ? "100%" : 360,
+          maxHeight: isMobile ? "70vh" : "none",
           background: "rgba(5,5,5,.97)",
           backdropFilter: "blur(32px)",
-          borderLeft: "1px solid rgba(255,255,255,.08)",
+          borderLeft: isMobile ? "none" : "1px solid rgba(255,255,255,.08)",
+          borderTop: isMobile ? "1px solid rgba(255,255,255,.08)" : "none",
+          borderRadius: isMobile ? "16px 16px 0 0" : 0,
           zIndex: 999,
-          transform: panelOpen ? "translateX(0)" : "translateX(100%)",
+          transform: panelOpen
+            ? "translate(0,0)"
+            : isMobile
+              ? "translateY(100%)"
+              : "translateX(100%)",
           transition: "transform .32s cubic-bezier(.4,0,.2,1)",
           display: "flex",
           flexDirection: "column",
         }}
       >
-        {/* Cluster panel */}
-        {selectedCluster && !selected && (
-          <ClusterPanel
-            cluster={selectedCluster}
-            onClose={closePanel}
-            onSelectPin={(pin) => {
-              setSelected(pin);
-              setSelectedCluster(null);
-              mapRef.current?.flyTo({
-                center: [pin.lng, pin.lat],
-                zoom: Math.max(mapRef.current.getZoom(), 15),
-                duration: 900,
-                essential: true,
-              });
-            }}
-          />
+        {/* Mobile drag handle */}
+        {isMobile && panelOpen && (
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px" }}>
+            <div style={{ width: 36, height: 4, borderRadius: 2, background: "rgba(255,255,255,.2)" }} />
+          </div>
         )}
 
         {/* Single pin panel */}
@@ -2786,6 +1090,7 @@ export default function SoundMapInner() {
               )}
             </div>
 
+            <div style={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
             {/* Visual art (GIF / Video) */}
             {(selected.gifStorageId || selected.videoStorageId || selected.gifStatus === "generating" || selected.videoStatus === "generating" || selected.gifStatus === "pending" || selected.videoStatus === "pending") && (
               <div
@@ -2912,6 +1217,7 @@ export default function SoundMapInner() {
                   Delete
                 </button>
               )}
+            </div>
             </div>
           </>
         )}
