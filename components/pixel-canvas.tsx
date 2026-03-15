@@ -19,12 +19,12 @@ const DEFAULTS: Classification = {
 };
 
 const CAT_CONFIG = [
-  { key: "bird"         as const, label: "Birds",        color: "#4CAF50", emoji: "🐦" },
-  { key: "insect"       as const, label: "Insects",      color: "#8BC34A", emoji: "🦋" },
-  { key: "traffic"      as const, label: "Traffic",      color: "#F44336", emoji: "🚗" },
-  { key: "construction" as const, label: "Construction", color: "#FF9800", emoji: "🔨" },
-  { key: "wind"         as const, label: "Wind / Rain",  color: "#42A5F5", emoji: "🌧️" },
-  { key: "silence"      as const, label: "Silence",      color: "#9E9E9E", emoji: "🌫️" },
+  { key: "bird"         as const, label: "Birds",        color: "#7DD3FC", emoji: "🐦" },
+  { key: "insect"       as const, label: "Insects",      color: "#A5B4FC", emoji: "🦋" },
+  { key: "traffic"      as const, label: "Traffic",      color: "#F87171", emoji: "🚗" },
+  { key: "construction" as const, label: "Construction", color: "#FBB040", emoji: "🔨" },
+  { key: "wind"         as const, label: "Wind / Rain",  color: "#93C5FD", emoji: "🌧️" },
+  { key: "silence"      as const, label: "Silence",      color: "#475569", emoji: "🌫️" },
 ] as const;
 
 type SliderKey = Exclude<keyof Classification, "biodiversityScore" | "dominantClass">;
@@ -96,7 +96,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
       {/* ------------------------------------------------------------------ */}
       {/* Canvas                                                              */}
       {/* ------------------------------------------------------------------ */}
-      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(255,255,255,0.08)] bg-[#0D0F0A]">
+      <div className="relative w-full overflow-hidden rounded-none sm:rounded-xl sm:border border-[rgba(147,197,253,0.08)] bg-[#07090E]">
         <canvas
           ref={canvasRef}
           className="block w-full"
@@ -105,22 +105,22 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
 
         {/* Top-left: dominant class badge */}
         <div
-          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/55 px-2 py-1 uppercase text-[#EDE8DC]"
+          className="absolute top-2 left-2 flex items-center gap-1.5 rounded-sm bg-black/60 px-2 py-1 uppercase text-[#DDE4F0]"
           style={{ fontFamily: "var(--font-pixel)", fontSize: "7px", letterSpacing: "0.05em" }}
         >
           <span
             className="h-1.5 w-1.5 rounded-full animate-pulse shrink-0"
             style={{
               backgroundColor:
-                CAT_CONFIG.find((c) => c.key === active.dominantClass)?.color ?? "#9E9E9E",
+                CAT_CONFIG.find((c) => c.key === active.dominantClass)?.color ?? "#475569",
             }}
           />
           {active.dominantClass}
         </div>
 
         {/* Top-right: 10-segment bio score bar */}
-        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 bg-black/55 px-2 py-1 rounded-sm">
-          <span style={{ fontFamily: "var(--font-pixel)", fontSize: "6px", color: "#9E9B8E" }}>
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1 bg-black/60 px-2 py-1 rounded-sm">
+          <span style={{ fontFamily: "var(--font-pixel)", fontSize: "6px", color: "#5C6A82" }}>
             BIO
           </span>
           <div className="flex items-center gap-[2px]">
@@ -130,7 +130,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
                 style={{
                   width: "6px",
                   height: "10px",
-                  backgroundColor: i < bioSegments ? "#C47D0A" : "rgba(255,255,255,0.12)",
+                  backgroundColor: i < bioSegments ? "#93C5FD" : "rgba(147,197,253,0.12)",
                 }}
               />
             ))}
@@ -140,7 +140,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
         {/* Bottom-right: demo label */}
         {isDemoMode && (
           <div
-            className="absolute bottom-2 right-2 rounded-sm px-2 py-1 text-[#C47D0A] border border-[rgba(197,125,10,0.35)] bg-[rgba(197,125,10,0.12)]"
+            className="absolute bottom-2 right-2 rounded-sm px-2 py-1 text-[#93C5FD] border border-[rgba(147,197,253,0.25)] bg-[rgba(147,197,253,0.08)]"
             style={{ fontFamily: "var(--font-pixel)", fontSize: "7px" }}
           >
             DEMO
@@ -157,15 +157,15 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
             <div key={key} className="space-y-1">
               <div className="flex items-center gap-1">
                 <span className="text-[10px]">{emoji}</span>
-                <span className="truncate text-[10px] text-[#9E9B8E]">{label}</span>
+                <span className="truncate text-[10px] text-[#5C6A82]">{label}</span>
               </div>
-              <div className="h-1 overflow-hidden rounded-full bg-[rgba(255,255,255,0.08)]">
+              <div className="h-1 overflow-hidden rounded-full bg-[rgba(147,197,253,0.08)]">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{ width: `${active[key] * 100}%`, backgroundColor: color }}
                 />
               </div>
-              <div className="font-mono text-[10px] text-[#9E9B8E]">
+              <div className="font-mono text-[10px] text-[#5C6A82]">
                 {Math.round(active[key] * 100)}%
               </div>
             </div>
@@ -174,10 +174,10 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
 
         {/* Demo sliders (hidden when real classification is provided) */}
         {isDemoMode && (
-          <div className="rounded-lg border border-[rgba(255,255,255,0.08)] bg-[#171A12] p-4">
+          <div className="rounded-lg border border-[rgba(147,197,253,0.09)] bg-[#0B0E18] p-4">
             <div className="mb-3 flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[#C47D0A] animate-pulse" />
-              <span className="font-mono text-[10px] uppercase tracking-widest text-[#9E9B8E]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[#93C5FD] animate-pulse" />
+              <span className="font-mono text-[10px] uppercase tracking-widest text-[#5C6A82]">
                 Demo — drag to simulate environment
               </span>
             </div>
@@ -197,7 +197,7 @@ export function PixelCanvas({ classification }: PixelCanvasProps) {
                     className="h-1 flex-1 cursor-pointer appearance-none rounded-full"
                     style={{ accentColor: color }}
                   />
-                  <span className="w-7 text-right font-mono text-[10px] text-[#9E9B8E]">
+                  <span className="w-7 text-right font-mono text-[10px] text-[#5C6A82]">
                     {Math.round(demo[key] * 100)}
                   </span>
                 </div>
